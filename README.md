@@ -1,1 +1,2 @@
-# performance_test_suite
+# backend_performance
+Plugin for performance test suites management

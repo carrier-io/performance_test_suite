@@ -42,14 +42,14 @@ class Slot:  # pylint: disable=E1101,R0903
                 'performance_test_suite/content.html',
             )
 
-    @web.slot('backend_performance_scripts')
+    @web.slot('performance_test_suite_scripts')
     def scripts(self, context, slot, payload):
         with context.app.app_context():
             return self.descriptor.render_template(
                 'performance_test_suite/scripts.html',
             )
 
-    @web.slot('backend_performance_styles')
+    @web.slot('performance_test_suite_styles')
     def styles(self, context, slot, payload):
         with context.app.app_context():
             return self.descriptor.render_template(

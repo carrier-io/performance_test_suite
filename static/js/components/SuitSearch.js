@@ -1,13 +1,16 @@
-const AnalyticFilterDropdown = {
+const SuitSearch = {
     props: {
         itemsList: {
             default: () => []
         },
+        isAllChecked: {
+            default: false,
+        }
     },
     data() {
         return {
-            refSearchId: 'refSearchCbx'+Math.round(Math.random() * 1000),
-            refDropdownId: 'refDropdown'+Math.round(Math.random() * 1000),
+            refSearchId: 'refSearchCbx'+uuidv4(),
+            refDropdownId: 'refDropdown'+uuidv4(),
             selectedItems: [],
             closeOnItem: true,
             clickedItem: {
@@ -25,7 +28,7 @@ const AnalyticFilterDropdown = {
         computedTitle() {
             if (this.selectedItems.length === 1) {
                 this.classTitle = 'complex-list_filled'
-                return this.selectedItems[0]
+                return this.selectedItems[0].name
             }
             if (this.selectedItems.length > 1) {
                 this.classTitle = 'complex-list_filled'
@@ -43,6 +46,9 @@ const AnalyticFilterDropdown = {
         }
     },
     mounted() {
+        if (this.isAllChecked) {
+            this.handlerSelectAll();
+        }
         $(".dropdown-menu.close-outside").on("click", function (event) {
             event.stopPropagation();
         });
@@ -74,8 +80,8 @@ const AnalyticFilterDropdown = {
                 el.checked = false;
             })
             if (value) {
-                this.foundedItems = this.itemsList.filter(metric => {
-                    return metric.toUpperCase().includes(value.toUpperCase())
+                this.foundedItems = this.itemsList.filter(item => {
+                    return item.name.toUpperCase().includes(value.toUpperCase())
                 })
             } else {
                 this.foundedItems  = [...this.itemsList]
@@ -83,9 +89,9 @@ const AnalyticFilterDropdown = {
         }
     },
     template: `
-        <div id="complexList" class="complex-list">
+        <div id="complexList" class="complex-list w-100">
             <button class="btn btn-select bootstrap-select__sm dropdown-toggle px-2.5 text-left w-100" type="button"
-                style="height: 32px"
+                style="height: 40px"
                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <span class="d-inline-block"
                     :class="classTitle"
@@ -109,10 +115,10 @@ const AnalyticFilterDropdown = {
                             :ref="refSearchId"
                             @click="handlerSelectAll"
                             type="checkbox">
-                        <span class="w-100 d-inline-block ml-3">All</span>
+                        <span class="w-100 d-inline-block ml-3">All rows</span>
                    </label>
                 </div>
-                <ul class="my-0" style="overflow: scroll; height: 183px;">
+                <ul class="my-0" style="overflow: scroll; max-height: 183px;">
                     <li class="dropdown-item dropdown-menu_item d-flex align-items-center"
                         v-for="item in foundedItems" :key="item">
                          <label
@@ -121,14 +127,13 @@ const AnalyticFilterDropdown = {
                                 :ref="refDropdownId"
                                 @click="setClickedItem(item, $event)"
                                 type="checkbox">
-                            <span class="w-100 d-inline-block ml-3">{{ item }}</span>
+                            <div class="d-flex w-100 ">
+                                <p class="ml-3 mb-0 flex-grow-1">{{ item.name }}</p>
+                                <p class="mb-0">{{ item.test_type}}</p>
+                            </div>
                         </label>
                     </li>
                 </ul>
-                <div class="p-3" v-if="false">
-                    <button class="btn btn-basic mr-2" type="submit">Submit</button>
-                    <button type="button" class="btn btn-secondary">Cancel</button>
-                </div>
             </div>
         </div>`
 };

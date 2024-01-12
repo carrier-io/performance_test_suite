@@ -37,35 +37,35 @@ class API(Resource):
         test_suite.insert()
         return test_suite.to_json(), 201
 
-    # def delete(self, project_id: int):
-    #     project = self.module.context.rpc_manager.call.project_get_or_404(
-    #         project_id=project_id)
-    #     try:
-    #         delete_ids = list(map(int, request.args["id[]"].split(',')))
-    #     except TypeError:
-    #         return 'IDs must be integers', 400
-    #
-    #     filter_ = and_(
-    #         Threshold.project_id == project.id,
-    #         Threshold.id.in_(delete_ids)
-    #     )
-    #     Threshold.query.filter(
-    #         filter_
-    #     ).delete()
-    #     Threshold.commit()
-    #     return {'ids': delete_ids}, 204
+    def delete(self, project_id: int):
+        project = self.module.context.rpc_manager.call.project_get_or_404(
+            project_id=project_id)
+        try:
+            delete_ids = list(map(int, request.args["id[]"].split(',')))
+        except TypeError:
+            return 'IDs must be integers', 400
 
-    # def put(self, project_id: int, threshold_id: int):
-    #     project = self.module.context.rpc_manager.call.project_get_or_404(
-    #         project_id=project_id)
-    #     try:
-    #         pd_obj = ThresholdPD(project_id=project_id, **request.json)
-    #     except ValidationError as e:
-    #         return e.errors(), 400
-    #     th_query = Threshold.query.filter(
-    #         Threshold.project_id == project_id,
-    #         Threshold.id == threshold_id
-    #     )
-    #     th_query.update(pd_obj.dict())
-    #     Threshold.commit()
-    #     return th_query.one().to_json(), 200
+        filter_ = and_(
+            Suite.project_id == project.id,
+            Suite.id.in_(delete_ids)
+        )
+        Suite.query.filter(
+            filter_
+        ).delete()
+        Suite.commit()
+        return {'ids': delete_ids}, 204
+
+    def put(self, project_id: int, suite_id: int):
+        project = self.module.context.rpc_manager.call.project_get_or_404(
+            project_id=project_id)
+        try:
+            pd_obj = SuitePD(**request.json)
+        except ValidationError as e:
+            return e.errors(), 400
+        suite_query = Suite.query.filter(
+            Suite.project_id == project_id,
+            Suite.id == suite_id
+        )
+        suite_query.update(pd_obj.dict())
+        Suite.commit()
+        return suite_query.one().to_json(), 200

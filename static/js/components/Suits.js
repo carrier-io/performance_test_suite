@@ -1,6 +1,8 @@
 const Suits = {
     components: {
         SuitSearch: SuitSearch,
+        Locations: Locations,
+        'input-stepper': InputStepper,
     },
     data() {
         return {
@@ -11,10 +13,15 @@ const Suits = {
             suitEnv: '',
             suitType: '',
             needUpdateSearch: false,
+            location: 'default',
+            parallel_runners: 1,
+            cpu_quota: 1,
+            memory_quota: 4,
+            cloud_settings: {},
         }
     },
     mounted() {
-        this.fetchAllTests()
+        this.fetchAllTests();
     },
     methods: {
         fetchAllTests() {
@@ -32,7 +39,160 @@ const Suits = {
             this.selectedTests = [...selectPage];
         },
         addTests() {
-            $('#allTests').bootstrapTable('load', this.selectedTests);
+            $('#allTests').bootstrapTable('refreshOptions', {
+                columns: [
+                    {
+                        title: 'name',
+                        field: 'name'
+                    },
+                    {
+                        field: 'entrypoint',
+                        title: 'entrypoint'
+                    },
+                    {
+                        field: 'runner',
+                        title: 'runner'
+                    }
+                ],
+                data: this.selectedTests,
+                detailView: true,
+                detailFormatter: function(index, rowData) {
+                    const container = document.createElement('div');
+                    const app = Vue.createApp({
+                        template: `
+                            <div>
+                                <div class="row mb-4 mt-2" data-toggle="collapse" data-target="#location_${rowData.uid}" role="button" aria-expanded="false" aria-controls="location_${rowData.uid}">
+                                    <div class="col">
+                                        <p class="font-h5 font-bold text-uppercase">LOAD CONFIGURAIONT
+                                            <button type="button" class="btn btn-nooutline-secondary p-0 pb-1 ml-1" data-toggle="collapse" data-target="#location_${rowData.uid}">
+                                                <i class="icon__16x16 icon-arrow-up__16 rotate-90"></i>
+                                            </button>
+                                        </p>
+                                        <p class="font-h6 font-weight-400">Change engine regions and load profile. CPU Cores and Memory are distributed for each parallel test</p>
+                                    </div>
+                                </div>
+                                <div class="collapse" id="location_${rowData.uid}">
+                                    <div class="d-flex pb-4">
+                                        <div class="custom-input w-100-imp displacement-ml-4">
+                                            <p class="custom-input_desc font-semibold mb-1">Engine location</p>
+                                            <select class="selectpicker bootstrap-select__b" data-style="btn">                                    >
+                                                <optgroup label="Public pool">
+                                                    <option v-for="item in ['default']">{{ item }}</option>
+                                                </optgroup>
+                                            </select>
+                                        </div>
+                                        <div class="custom-input ml-3">
+                                            <p class="custom-input_desc font-semibold mb-1">Runners</p>
+                                            <input-stepper 
+                                                :default-value="${rowData.parallel_runners}"
+                                                :uniq_id="modal_id + '_parallel'"
+                                                @change="val => (parallel_runners_ = val)"
+                                            ></input-stepper>
+                                        </div>
+                                        <div class="custom-input ml-3">
+                                            <p class="custom-input_desc font-semibold mb-1">CPU Cores</p>
+                                            <input-stepper 
+                                                :default-value="${rowData.env_vars.cpu_quota}"
+                                                :uniq_id="modal_id + '_cpu'"
+                                                @change="val => (cpu_ = val)"
+                                            ></input-stepper>
+                                        </div>
+                                        <div class="custom-input mx-3">
+                                            <p class="custom-input_desc font-semibold mb-1">Memory, Gb</p>
+                                            <input-stepper 
+                                                :default-value="${rowData.env_vars.memory_quota}"
+                                                :uniq_id="modal_id + '_memory'"
+                                                @change="val => (memory_ = val)"
+                                            ></input-stepper>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-4" data-toggle="collapse" data-target="#params_${rowData.uid}" role="button" aria-expanded="false" aria-controls="params_${rowData.uid}">
+                                    <div class="col">
+                                        <p class="font-h5 font-bold text-uppercase">Test parameters
+                                            <button type="button" class="btn btn-nooutline-secondary p-0 pb-1 ml-1" data-toggle="collapse" data-target="#params_${rowData.uid}">
+                                                <i class="icon__16x16 icon-arrow-up__16 rotate-90"></i>
+                                            </button>
+                                        </p>
+                                        <p class="font-h6 font-weight-400">You may also create additional parameters with ability to change them in subsequent test runs</p>
+                                    </div>
+                                </div>
+                                <div class="collapse" id="params_${rowData.uid}">
+                                    <div class="card-table-sm card mb-2" style="box-shadow: none">
+                                        <table
+                                            ref="test_params_${rowData.uid}"
+                                            class="table table-transparent"
+                                            id="test_params_${rowData.uid}"
+                                            data-toggle="table">
+                                            <thead class="thead-light">
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                        <div class="mb-4">
+                                            <button class="btn btn-secondary mt-2 d-flex align-items-center" @click="addParam">
+                                                <i class="icon__18x18 icon-create-element mr-2"></i>
+                                                Add parameter
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        data() {
+                            return {
+                                rowData: rowData,
+                            };
+                        },
+                        components: {
+                            'input-stepper': InputStepper,
+                        },
+                        mounted() {
+                            $(this.$refs[`test_params_${rowData.uid}`]).bootstrapTable({
+                                columns: [
+                                    {
+                                        title: 'name',
+                                        field: 'name',
+                                        formatter: (value, row, index, field) => ParamsTable.inputFormatter(value, row, index, field, `${rowData.uid}`),
+                                        sortable: true,
+                                    },
+                                    {
+                                        field: 'default',
+                                        title: 'default Value',
+                                        formatter: (value, row, index, field) => ParamsTable.inputFormatter(value, row, index, field, `${rowData.uid}`),
+                                        sortable: true,
+                                    },
+                                    {
+                                        field: 'description',
+                                        title: 'description',
+                                        formatter: (value, row, index, field) => ParamsTable.inputFormatter(value, row, index, field, `${rowData.uid}`),
+                                        sortable: true,
+                                    },
+                                    {
+                                        class: 'w-12',
+                                        formatter: (value, row, index) => ParamsTable.deleteRowFormatter(value, row, index, `${rowData.uid}`),
+                                    }
+                                ],
+                                data: rowData.test_parameters
+                            });
+                        },
+                        methods: {
+                            addParam() {
+                                $(this.$refs[`test_params_${rowData.uid}`]).bootstrapTable('insertRow', {
+                                    index: 0,
+                                    row: {
+                                        name: '',
+                                        default: '',
+                                        description: '',
+                                    }
+                                })
+                            },
+                        }
+                    });
+                    app.mount(container);
+                    return container
+                },
+            });
             this.showTestTable = this.selectedTests.length > 0;
         },
         removeRow(i) {
@@ -42,12 +202,13 @@ const Suits = {
             })
         },
         createSuit() {
+            const tests = $('#allTests').bootstrapTable('getData');
             const newSuit = {
                 "project_id": getSelectedProjectId(),
                 "name": this.suitName,
                 "env": this.suitEnv,
                 "type": this.suitType,
-                "tests": this.selectedTests,
+                "tests": tests,
                 "reporters": []
             }
             ApiCreateSuits(newSuit).then(() => {
@@ -64,7 +225,7 @@ const Suits = {
             }).finally(() => {
                 this.needUpdateSearch = false;
             })
-        }
+        },
     },
     template: `
         <div class="p-3">
@@ -230,7 +391,7 @@ const Suits = {
                 </template>
             </Table-Card>
         </div>
-        
+
         <div class="modal fixed-left shadow-sm" tabindex="-1" role="dialog" id="suiteModal">
             <div class="modal-dialog modal-dialog-aside" role="document">
                 <div class="modal-content">
@@ -328,6 +489,7 @@ const Suits = {
                                     <table
                                         class="table table-transparent"
                                         id="allTests"
+                                        data-unique-id="uid"
                                         data-toggle="table">
                                         <thead class="thead-light">
                                             <tr>
@@ -336,233 +498,13 @@ const Suits = {
                                                 <th data-sortable="true" data-field="runner">runner</th>
                                                 <th scope="col" data-align="right"
                                                     data-formatter=ParamsTable.actions
-                                                    data-events="ParamsTable.action_events">Actions</th>                                            </tr>
+                                                    data-events="ParamsTable.action_events">Actions</th>      
+                                            </tr>
                                         </thead>
                                         <tbody>
                                         </tbody>
                                     </table>
                                 </div>
-<!--                                <Locations-->
-<!--                                    location=''-->
-<!--                                    parallel_runners=''-->
-<!--                                    cpu=''-->
-<!--                                    memory=''-->
-<!--                                    cloud_settings=''-->
-<!--                                ></Locations>-->
-<!--                                <div class="row mb-4" data-toggle="collapse" data-target="#advancedBackend" role="button" aria-expanded="false" aria-controls="advancedBackend">-->
-<!--                                    <div class="col">-->
-<!--                                        <p class="font-h5 font-bold text-uppercase">LOAD CONFIGURAIONT-->
-<!--                                            <button type="button" class="btn btn-nooutline-secondary p-0 pb-1 ml-1" data-toggle="collapse" data-target="#advancedBackend">-->
-<!--                                                <i class="icon__16x16 icon-arrow-up__16 rotate-90"></i>-->
-<!--                                            </button>-->
-<!--                                        </p>-->
-<!--                                        <p class="font-h6 font-weight-400">Change engine regions and load profile. CPU Cores and Memory are distributed for each parallel test</p>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                                <div class="collapse" id="advancedBackend">-->
-<!--                                    <div class="card-table-sm card" style="box-shadow: none">-->
-<!--                                        <table-->
-<!--                                            class="table table-transparent"-->
-<!--                                            id="tests-list-dynamic1"-->
-<!--                                            data-toggle="table"-->
-<!--                                            data-unique-id="id"-->
-<!--                                            data-data='{-->
-<!--                                                "total": 2,-->
-<!--                                                "rows": [-->
-<!--                                                    {-->
-<!--                                                        "id": 1,-->
-<!--                                                        "engine_type": "String",-->
-<!--                                                        "runners_type": 134,-->
-<!--                                                        "cpu_type": "blue",-->
-<!--                                                        "memory_size": "4000"-->
-<!--                                                    },-->
-<!--                                                    {-->
-<!--                                                        "id": 2,-->
-<!--                                                        "engine_type": "String",-->
-<!--                                                        "runners_type": 134,-->
-<!--                                                        "cpu_type": "red",-->
-<!--                                                        "memory_size": "4000"-->
-<!--                                                    }-->
-<!--                                                ]-->
-<!--                                            }'>-->
-<!--                                            <thead class="thead-light">-->
-<!--                                                <tr>-->
-<!--                                                    <th data-sortable="true" data-field="engine_type" data-formatter="table_formatters.inputDefaultFormatter">NAME</th>-->
-<!--                                                    <th data-sortable="true" data-field="runners_type" data-formatter="table_formatters.inputDefaultFormatter">DEFAULT VALUE</th>-->
-<!--                                                    <th data-sortable="true" data-field="cpu_type" data-formatter="table_formatters.selectFormatter"-->
-<!--                                                        data-values="tableColors">DESCRIPTION</th>-->
-<!--                                                    <th data-align="right" data-cell-style="cellStyle" data-formatter=table_formatters.action></th>-->
-<!--                                                </tr>-->
-<!--                                            </thead>-->
-<!--                                            <tbody>-->
-<!--                                            </tbody>-->
-<!--                                        </table>-->
-<!--                                        <div class="mb-4">-->
-<!--                                            <button class="btn btn-secondary mt-2 d-flex align-items-center" id="create-location">-->
-<!--                                                <i class="icon__18x18 icon-create-element mr-2"></i>-->
-<!--                                                Add Location-->
-<!--                                            </button>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                                <div class="row mb-4" data-toggle="collapse" data-target="#advancedBackend2" role="button" aria-expanded="false" aria-controls="advancedBackend2">-->
-<!--                                    <div class="col">-->
-<!--                                        <p class="font-h5 font-bold text-uppercase">Thresholds-->
-<!--                                            <button type="button" class="btn btn-nooutline-secondary p-0 pb-1 ml-1" data-toggle="collapse" data-target="#advancedBackend2">-->
-<!--                                                <i class="icon__16x16 icon-arrow-up__16 rotate-90"></i>-->
-<!--                                            </button>-->
-<!--                                        </p>-->
-<!--                                        <p class="font-h6 font-weight-400">Description</p>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                                <div class="collapse" id="advancedBackend2">-->
-<!--                                    <div class="card-table-sm card" style="box-shadow: none">-->
-<!--                                        <table-->
-<!--                                                class="table table-transparent"-->
-<!--                                                id="tests-list-dynamic1"-->
-<!--                                                data-toggle="table"-->
-<!--                                                data-unique-id="id"-->
-<!--                                                data-data='{-->
-<!--                                                "total": 2,-->
-<!--                                                "rows": [-->
-<!--                                                    {-->
-<!--                                                        "id": 1,-->
-<!--                                                        "engine_type": "String",-->
-<!--                                                        "runners_type": 134,-->
-<!--                                                        "cpu_type": "blue",-->
-<!--                                                        "memory_size": "4000"-->
-<!--                                                    },-->
-<!--                                                    {-->
-<!--                                                        "id": 2,-->
-<!--                                                        "engine_type": "String",-->
-<!--                                                        "runners_type": 134,-->
-<!--                                                        "cpu_type": "red",-->
-<!--                                                        "memory_size": "4000"-->
-<!--                                                    }-->
-<!--                                                ]-->
-<!--                                            }'>-->
-<!--                                            <thead class="thead-light">-->
-<!--                                            <tr>-->
-<!--                                                <th data-sortable="true" data-field="engine_type" data-formatter="table_formatters.inputDefaultFormatter">NAME</th>-->
-<!--                                                <th data-sortable="true" data-field="runners_type" data-formatter="table_formatters.inputDefaultFormatter">DEFAULT VALUE</th>-->
-<!--                                                <th data-sortable="true" data-field="cpu_type" data-formatter="table_formatters.selectFormatter"-->
-<!--                                                    data-values="tableColors">DESCRIPTION</th>-->
-<!--                                                <th data-align="right" data-cell-style="cellStyle" data-formatter=table_formatters.action></th>-->
-<!--                                            </tr>-->
-<!--                                            </thead>-->
-<!--                                            <tbody>-->
-<!--                                            </tbody>-->
-<!--                                        </table>-->
-<!--                                        <div class="mb-4">-->
-<!--                                            <button class="btn btn-secondary mt-2 d-flex align-items-center" id="create-location">-->
-<!--                                                <i class="icon__18x18 icon-create-element mr-2"></i>-->
-<!--                                                Add Location-->
-<!--                                            </button>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--        -->
-<!--                                <div class="row mb-4" data-toggle="collapse" data-target="#advancedBackend3" role="button" aria-expanded="false" aria-controls="advancedBackend3">-->
-<!--                                    <div class="col">-->
-<!--                                        <p class="font-h5 font-bold text-uppercase">Test parameters-->
-<!--                                            <button type="button" class="btn btn-nooutline-secondary p-0 pb-1 ml-1" data-toggle="collapse" data-target="#advancedBackend3">-->
-<!--                                                <i class="icon__16x16 icon-arrow-up__16 rotate-90"></i>-->
-<!--                                            </button>-->
-<!--                                        </p>-->
-<!--                                        <p class="font-h6 font-weight-400">Description</p>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                                <div class="collapse" id="advancedBackend3">-->
-<!--                                    <div class="card-table-sm card" style="box-shadow: none">-->
-<!--                                        <table-->
-<!--                                                class="table table-transparent"-->
-<!--                                                id="tests-list-dynamic3"-->
-<!--                                                data-toggle="table"-->
-<!--                                                data-unique-id="id"-->
-<!--                                                data-data='{-->
-<!--                                                "total": 2,-->
-<!--                                                "rows": [-->
-<!--                                                    {-->
-<!--                                                        "id": 1,-->
-<!--                                                        "engine_type": "String",-->
-<!--                                                        "runners_type": 134,-->
-<!--                                                        "cpu_type": "blue",-->
-<!--                                                        "memory_size": "4000"-->
-<!--                                                    },-->
-<!--                                                    {-->
-<!--                                                        "id": 2,-->
-<!--                                                        "engine_type": "String",-->
-<!--                                                        "runners_type": 134,-->
-<!--                                                        "cpu_type": "red",-->
-<!--                                                        "memory_size": "4000"-->
-<!--                                                    }-->
-<!--                                                ]-->
-<!--                                            }'>-->
-<!--                                            <thead class="thead-light">-->
-<!--                                            <tr>-->
-<!--                                                <th data-sortable="true" data-field="engine_type" data-formatter="table_formatters.inputDefaultFormatter">NAME</th>-->
-<!--                                                <th data-sortable="true" data-field="runners_type" data-formatter="table_formatters.inputDefaultFormatter">DEFAULT VALUE</th>-->
-<!--                                                <th data-sortable="true" data-field="cpu_type" data-formatter="table_formatters.selectFormatter"-->
-<!--                                                    data-values="tableColors">DESCRIPTION</th>-->
-<!--                                                <th data-align="right" data-cell-style="cellStyle" data-formatter=table_formatters.action></th>-->
-<!--                                            </tr>-->
-<!--                                            </thead>-->
-<!--                                            <tbody>-->
-<!--                                            </tbody>-->
-<!--                                        </table>-->
-<!--                                        <div class="mb-4">-->
-<!--                                            <button class="btn btn-secondary mt-2 d-flex align-items-center" id="create-location">-->
-<!--                                                <i class="icon__18x18 icon-create-element mr-2"></i>-->
-<!--                                                Add Location-->
-<!--                                            </button>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--        -->
-<!--                                <div class="row mb-4">-->
-<!--                                    <div class="col">-->
-<!--                                        <p class="font-h5 font-bold text-uppercase">Reporting-->
-<!--                                        </p>-->
-<!--                                        <p class="font-h6 font-weight-400">Specify expected report types.</p>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                                <div class="d-grid grid-column-2 gap-50 grid-items-start mt-4"-->
-<!--                                     id="backend_performance_system_section">-->
-<!--                                    <div class="card card-row-1 card-x mx-auto">-->
-<!--                                        <div class="card-header">-->
-<!--                                            <div class="d-flex align-items-center"><p class="flex-grow-1 font-h5 font-semibold"-->
-<!--                                                                                      style="line-height: 24px;">S3 Storage</p>-->
-<!--                                                &lt;!&ndash;v-if&ndash;&gt;<label class="custom-toggle" data-toggle="false" data-placement="top"-->
-<!--                                                                  title="No integrations found"><input aria-expanded="false"-->
-<!--                                                                                                       type="checkbox"-->
-<!--                                                                                                       data-target="#selector_s3_integration"-->
-<!--                                                                                                       data-toggle="collapse"-->
-<!--                                                                                                       class="collapsed"><span-->
-<!--                                                        class="custom-toggle_slider round"></span></label></div>-->
-<!--                                        </div>-->
-<!--                                        <div>-->
-<!--                                            <div class="pb-20 collapse" id="selector_s3_integration" style="">-->
-<!--                                                <div><p class="font-h6 font-semibold mb-1">Integrated account</p>-->
-<!--                                                    <div class="select-validation">-->
-<!--                                                        <div class="dropdown bootstrap-select bootstrap-select__b">-->
-<!--                                                            <select-->
-<!--                                                                class="selectpicker bootstrap-select__b" data-style="btn"-->
-<!--                                                                tabindex="-98">-->
-<!--                                                                <option title="Carrier Minio - default" value="1#null">Carrier Minio-->
-<!--                                                                    - default-->
-<!--                                                                </option>-->
-<!--                                                            </select>-->
-<!--                                                        </div>-->
-<!--                                                        <span class="select_error-msg"></span></div>-->
-<!--                                                </div>-->
-<!--                                                <div class="security_integration_item" data-name="s3-integration-toggle"></div>-->
-<!--                                            </div>-->
-<!--                                        </div>-->
-<!--                                        <div class="row">-->
-<!--                                            <div class="collapse col-12 mb-3 pl-0" id="settings_s3_integration"></div>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
                             </div>
                         </div>
                     </div>

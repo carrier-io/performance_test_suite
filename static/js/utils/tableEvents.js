@@ -1,9 +1,46 @@
 var ParamsTable = {
+    inputFormatter(value, row, index, field, tableId) {
+        return `<div class="custom-input w-100">
+                <input type="text" value="${value}" onchange="ParamsTable.updateCell(this, ${index}, '${field}', '${tableId}')" value="${value}">
+            </div>`
+    },
+    deleteRowFormatter: (value, row, index, tableId) => {
+        return `
+            <button class="btn btn-default btn-xs btn-table btn-icon__xs mr-2" style="width: 150px;"
+                onclick="ParamsTable.removeParamRow(this, '${index}', '${row.name}', '${tableId}')">
+                <i class="icon__16x16 icon-delete"></i>
+            </button>
+        `
+    },
+    removeParamRow: (el, index, rowName, tableId) => {
+        $(el.closest('table')).bootstrapTable('remove', {
+            field: '$index',
+            values: [+index]
+        })
+        ParamsTable.updateParentTable(tableId)
+    },
+    updateCell: (el, row, field, tableId) => {
+        $(el.closest('table')).bootstrapTable(
+            'updateCell',
+            {index: row, field: field, value: el.value}
+        );
+        ParamsTable.updateParentTable(tableId)
+    },
+    updateParentTable(tableId) {
+        const testParams = $(`#test_params_${tableId}`).bootstrapTable('getData');
+        console.log(testParams)
+        $('#allTests').bootstrapTable('updateCellByUniqueId', {
+            id: tableId,
+            field: 'test_parameters',
+            value: testParams,
+            reinit: false
+        })
+    },
     suitTestFormatter(value, row, index, field) {
         if (!row.tests.length) return '';
 
         if (row.tests.length < 3) {
-            const listTagsBtn = row.tags.map(test =>
+            const listTagsBtn = row.tests.map(test =>
                 `<button class="btn btn-xs btn-painted mr-1 rounded-pill">${test.name}
             </button>`
             )
@@ -70,5 +107,12 @@ var ParamsTable = {
         'click .action_delete': function (e, value, row, index) {
             vueVm.registered_components['suits'].removeRow(index)
         }
+    },
+    detailFormatter(index, row) {
+        var html = []
+        $.each(row, function (key, value) {
+            html.push('<p><b>' + key + ':</b> ' + value + '</p>')
+        })
+        return html.join('')
     }
 }

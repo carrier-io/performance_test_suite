@@ -86,7 +86,7 @@ const Suits = {
                                             <input-stepper 
                                                 :default-value="${rowData.parallel_runners}"
                                                 :uniq_id="modal_id + '_parallel'"
-                                                @change="val => (parallel_runners_ = val)"
+                                                @change="event => changeLocationParam(event, 'parallel_runners')"
                                             ></input-stepper>
                                         </div>
                                         <div class="custom-input ml-3">
@@ -94,7 +94,7 @@ const Suits = {
                                             <input-stepper 
                                                 :default-value="${rowData.env_vars.cpu_quota}"
                                                 :uniq_id="modal_id + '_cpu'"
-                                                @change="val => (cpu_ = val)"
+                                                @change="event => changeLocationParam(event, 'cpu_quota')"
                                             ></input-stepper>
                                         </div>
                                         <div class="custom-input mx-3">
@@ -102,7 +102,7 @@ const Suits = {
                                             <input-stepper 
                                                 :default-value="${rowData.env_vars.memory_quota}"
                                                 :uniq_id="modal_id + '_memory'"
-                                                @change="val => (memory_ = val)"
+                                                @change="event => changeLocationParam(event, 'memory_quota')"
                                             ></input-stepper>
                                         </div>
                                     </div>
@@ -187,6 +187,14 @@ const Suits = {
                                     }
                                 })
                             },
+                            changeLocationParam(val, type) {
+                                $('#allTests').bootstrapTable('updateCellByUniqueId', {
+                                    id: this.rowData.uid,
+                                    field: 'env_vars',
+                                    value: { ...this.rowData.env_vars, [type]: val },
+                                    reinit: false
+                                })
+                            }
                         }
                     });
                     app.mount(container);

@@ -28,7 +28,6 @@ var ParamsTable = {
     },
     updateParentTable(tableId) {
         const testParams = $(`#test_params_${tableId}`).bootstrapTable('getData');
-        console.log(testParams)
         $('#allTests').bootstrapTable('updateCellByUniqueId', {
             id: tableId,
             field: 'test_parameters',

@@ -1,39 +1,32 @@
-var ParamsTable = {
-    inputFormatter(value, row, index, field, tableId) {
-        return `<div class="custom-input w-100">
-                <input type="text" value="${value}" onchange="ParamsTable.updateCell(this, ${index}, '${field}', '${tableId}')" value="${value}">
-            </div>`
-    },
-    deleteRowFormatter: (value, row, index, tableId) => {
+var SuiteTable = {
+    actions(value, row, index) {
         return `
-            <button class="btn btn-default btn-xs btn-table btn-icon__xs mr-2" style="width: 150px;"
-                onclick="ParamsTable.removeParamRow(this, '${index}', '${row.name}', '${tableId}')">
-                <i class="icon__16x16 icon-delete"></i>
-            </button>
+            <div class="d-flex justify-content-end">
+                <div class="dropdown_multilevel">
+                    <button class="btn btn-default btn-xs btn-table btn-icon__xs" type="button"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="icon__18x18 icon-menu-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li class="dropdown-menu_item dropdown-item d-flex align-items-center suit_edit">
+                            <i class="icon__18x18 icon-settings mr-2"></i><span class="w-100 font-h5">Settings</span>
+                        </li>
+                        <li class="dropdown-menu_item dropdown-item d-flex align-items-center suit_delete">
+                            <i class="icon__18x18 icon-delete mr-2"></i><span class="w-100 font-h5">Delete</span>
+                        </li>
+                    </ul>
+                </div>
+                
+            </div>
         `
     },
-    removeParamRow: (el, index, rowName, tableId) => {
-        $(el.closest('table')).bootstrapTable('remove', {
-            field: '$index',
-            values: [+index]
-        })
-        ParamsTable.updateParentTable(tableId)
-    },
-    updateCell: (el, row, field, tableId) => {
-        $(el.closest('table')).bootstrapTable(
-            'updateCell',
-            {index: row, field: field, value: el.value}
-        );
-        ParamsTable.updateParentTable(tableId)
-    },
-    updateParentTable(tableId) {
-        const testParams = $(`#test_params_${tableId}`).bootstrapTable('getData');
-        $('#allTests').bootstrapTable('updateCellByUniqueId', {
-            id: tableId,
-            field: 'test_parameters',
-            value: testParams,
-            reinit: false
-        })
+    action_events: {
+        'click .suit_edit': function (e, value, row, index) {
+            vueVm.registered_components['suits'].editSuit(row)
+        },
+        'click .suit_delete': function (e, value, row, index) {
+            vueVm.registered_components['suits'].deleteSuit(index)
+        }
     },
     suitTestFormatter(value, row, index, field) {
         if (!row.tests.length) return '';
@@ -84,6 +77,45 @@ var ParamsTable = {
         },0);
         return `${firstTestBtn}${infoTags}`
     },
+}
+
+var ParamsTable = {
+    inputFormatter(value, row, index, field, tableId) {
+        return `<div class="custom-input w-100">
+                <input type="text" value="${value}" onchange="ParamsTable.updateCell(this, ${index}, '${field}', '${tableId}')" value="${value}">
+            </div>`
+    },
+    deleteRowFormatter: (value, row, index, tableId) => {
+        return `
+            <button class="btn btn-default btn-xs btn-table btn-icon__xs mr-2" style="width: 150px;"
+                onclick="ParamsTable.removeParamRow(this, '${index}', '${row.name}', '${tableId}')">
+                <i class="icon__16x16 icon-delete"></i>
+            </button>
+        `
+    },
+    removeParamRow: (el, index, rowName, tableId) => {
+        $(el.closest('table')).bootstrapTable('remove', {
+            field: '$index',
+            values: [+index]
+        })
+        ParamsTable.updateParentTable(tableId)
+    },
+    updateCell: (el, row, field, tableId) => {
+        $(el.closest('table')).bootstrapTable(
+            'updateCell',
+            {index: row, field: field, value: el.value}
+        );
+        ParamsTable.updateParentTable(tableId)
+    },
+    updateParentTable(tableId) {
+        const testParams = $(`#test_params_${tableId}`).bootstrapTable('getData');
+        $('#allTests').bootstrapTable('updateCellByUniqueId', {
+            id: tableId,
+            field: 'test_parameters',
+            value: testParams,
+            reinit: false
+        })
+    },
     deleteSuit() {
         return `
         <div class="d-flex justify-content-end">
@@ -104,7 +136,7 @@ var ParamsTable = {
     },
     action_events: {
         'click .action_delete': function (e, value, row, index) {
-            vueVm.registered_components['suits'].removeRow(index)
+            vueVm.registered_components['suit_modal'].removeRow(index, row)
         }
     },
     detailFormatter(index, row) {

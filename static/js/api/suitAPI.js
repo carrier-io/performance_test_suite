@@ -29,3 +29,14 @@ const ApiCreateSuits = async (suit) => {
     })
     return res.json();
 }
+
+const ApiUpdateSuits = async (suit, id) => {
+    const res = await fetch(`/api/v1/performance_test_suite/suite/${id}/${getSelectedProjectId()}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(suit)
+    })
+    return res.json();
+}

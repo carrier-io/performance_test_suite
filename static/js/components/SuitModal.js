@@ -15,13 +15,21 @@ const SuitModal = {
             cloud_settings: {},
             editableSuit: {
                 uid: null,
+                name: '',
+                env: '',
+                type: '',
                 tests: [],
             },
+            suitsTestsList: [],
+            suitsLocationsList: [],
+            listLoc: {},
+            applyClicked: false,
+            isValidFilter: false,
         }
     },
     mounted() {
         $('#suiteModal').on('shown.bs.modal', (event) => {
-            this.editableSuit = { ...this.currentSuit }
+            this.editableSuit = _.cloneDeep(this.currentSuit)
             if (this.currentSuit.uid) {
                 this.editableSuit.tests = this.editableSuit.tests.map(test => {
                         if (test.uid) {
@@ -31,7 +39,13 @@ const SuitModal = {
                         }
                     }
                 )
-                this.selectedTests = this.editableSuit.tests
+                this.suitsTestsList = this.editableSuit.tests.map(test => test.name);
+                this.suitsLocationsList = this.editableSuit.tests.map(test => test.location);
+                this.listLoc = this.suitsLocationsList.reduce((acc, elem) => {
+                    acc[elem] = (acc[elem] || 0) + 1;
+                    return acc;
+                }, {})
+                this.selectedTests = this.editableSuit.tests;
                 this.addTests();
             }
         })
@@ -39,11 +53,25 @@ const SuitModal = {
     watch: {
         editableSuit: {
             handler: function (newVal, oldVal) {
+                this.isValidFilter = !!newVal.name && !!newVal.env && !!newVal.type && !!newVal.tests.length;
             },
             deep: true,
         }
     },
     methods: {
+        hasError(value) {
+            return value.length > 0;
+        },
+        showError(value) {
+            return this.applyClicked ? value.length > 0 : true;
+        },
+        apply() {
+            this.applyClicked = true;
+            if (!this.editableSuit.tests.length) showNotify('ERROR', 'Add Test.');
+            if (this.isValidFilter) {
+                this.createSuit();
+            }
+        },
         addTests() {
             this.editableSuit.tests = [...this.selectedTests]
             $('#allTests').bootstrapTable('refreshOptions', {
@@ -182,8 +210,21 @@ const SuitModal = {
                                 ],
                                 data: rowData.test_parameters
                             });
+                            this.$nextTick(() => {
+                                const locationId = `#location_${this.rowData.uid}`;
+                                const paramsId = `#params_${this.rowData.uid}`;
+                                this.addRotateEvents(locationId, 'show.bs.collapse', 'addClass');
+                                this.addRotateEvents(locationId, 'hide.bs.collapse', 'removeClass');
+                                this.addRotateEvents(paramsId, 'show.bs.collapse', 'addClass')
+                                this.addRotateEvents(paramsId, 'hide.bs.collapse', 'removeClass');
+                            })
                         },
                         methods: {
+                            addRotateEvents(elementId, eventName, methodName) {
+                                $(elementId).on(eventName, () => {
+                                    $(`[data-target='${elementId}'] i`)[methodName]('rotate-180')
+                                })
+                            },
                             addParam() {
                                 $(this.$refs[`test_params_${rowData.uid}`]).bootstrapTable('insertRow', {
                                     index: 0,
@@ -232,48 +273,43 @@ const SuitModal = {
             }
             if (this.editableSuit.id) {
                 ApiUpdateSuits(newSuit, this.editableSuit.id).then(() => {
-                    this.selectedTests = []
-                    this.needUpdateSearch = true
-                    $('#allTests').bootstrapTable('load', [])
                     $('#suiteModal').modal('hide');
-                    showNotify('SUCCESS', 'Suit created.');
+                    showNotify('SUCCESS', 'Suit updated.');
                     $('#tableSuit').bootstrapTable('refresh', { silent: true });
-                }).finally(() => {
-                    this.editableSuit.name = '';
-                    this.editableSuit.env = '';
-                    this.editableSuit.type = '';
-                    this.needUpdateSearch = false;
+                    this.resetData();
                 })
             } else {
                 ApiCreateSuits(newSuit).then(() => {
-                    this.selectedTests = []
-                    this.needUpdateSearch = true
-                    $('#allTests').bootstrapTable('load', [])
                     $('#suiteModal').modal('hide');
                     showNotify('SUCCESS', 'Suit created.');
                     $('#tableSuit').bootstrapTable('refresh', { silent: true });
-                }).finally(() => {
-                    this.editableSuit.name = '';
-                    this.editableSuit.env = '';
-                    this.editableSuit.type = '';
-                    this.needUpdateSearch = false;
+                    this.resetData();
                 })
             }
-
         },
         closeModal(){
+            this.resetData();
+        },
+        resetData() {
             this.selectedTests = []
             this.needUpdateSearch = true;
+            this.applyClicked = false;
             $('#allTests').bootstrapTable('load', [])
+            this.suitsTestsList = [];
+            this.suitsLocationsList = [];
+            this.listLoc = {};
             this.editableSuit =  {
                 uid: null,
+                name: '',
+                env: '',
+                type: '',
                 tests: [],
             }
             this.$emit('clear-current-suit')
         }
     },
     template: `
-        <div class="modal fixed-left shadow-sm" tabindex="-1" role="dialog" id="suiteModal">
+        <div class="modal fixed-left shadow-sm" tabindex="-1" role="dialog" id="suiteModal" data-keyboard="false" data-backdrop="static">
             <div class="modal-dialog modal-dialog-aside" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -288,11 +324,10 @@ const SuitModal = {
                                     Cancel
                                 </button>
                                 <button type="button"
-                                    @click="createSuit"
+                                    @click="apply"
                                     class="btn btn-basic d-flex align-items-center ml-2"
                                 >Save</button>
-                                <button type="button"
-                                    @click="createSuit"    
+                                <button type="button"   
                                     class="btn btn-basic d-flex align-items-center ml-2"
                                 >Save and Start</button>
                             </div>
@@ -303,55 +338,63 @@ const SuitModal = {
                             <div style="width: 260px; margin-right: 50px;">
                                 <p class="font-h5 text-uppercase font-bold mb-4">description</p>
                                 <p class="font-h5 font-semibold mb-1">Suit name</p>
-                                <div class="custom-input mb-2">
-                                    <input type="text" 
-                                        :disabled="editableSuit.uid"
-                                        v-model="editableSuit.name"
-                                        placeholder="Suit's name">
+                                <div class="flex-grow-1 cell-input mb-2">
+                                    <div class="custom-input need-validation" 
+                                        :class="{'invalid-input': !showError(editableSuit.name)}"
+                                        :data-valid="hasError(editableSuit.name)">
+                                        <input
+                                            type="text"
+                                            :disabled="editableSuit.uid"
+                                            v-model="editableSuit.name"
+                                            placeholder="Suit's name">
+                                        <span class="input_error-msg">Name is required!</span>
+                                    </div>
                                 </div>
                                 <p class="font-h5 font-semibold mb-1">Suit type</p>
-                                <div class="custom-input mb-2">
-                                    <input type="text" 
-                                        v-model="editableSuit.type"
-                                        placeholder="Suit's type">
+                                <div class="flex-grow-1 cell-input mb-2">
+                                    <div class="custom-input need-validation" 
+                                        :class="{'invalid-input': !showError(editableSuit.type)}"
+                                        :data-valid="hasError(editableSuit.type)">
+                                        <input
+                                            type="text"
+                                            v-model="editableSuit.type"
+                                            placeholder="Suit's type">
+                                        <span class="input_error-msg">Type is required!</span>
+                                    </div>
                                 </div>
                                 <p class="font-h5 font-semibold mb-1">Suit enviroment</p>
-                                <div class="custom-input mb-4">
-                                    <input type="text" 
-                                        v-model="editableSuit.env"
-                                        placeholder="Suit's enviroment">
+                                <div class="flex-grow-1 cell-input mb-4">
+                                    <div class="custom-input need-validation" 
+                                        :class="{'invalid-input': !showError(editableSuit.env)}"
+                                        :data-valid="hasError(editableSuit.env)">
+                                        <input
+                                            type="text"
+                                            v-model="editableSuit.env"
+                                            placeholder="Suit's enviroment">
+                                        <span class="input_error-msg">Type is required!</span>
+                                    </div>
                                 </div>
                                 <p class="font-h5 text-uppercase font-bold mb-3">Summary</p>
-                                <div class="px-2 py-1 d-flex border-b w-100 justify-content-between">
+                                <div
+                                    class="px-2 py-1 d-flex border-b w-100 justify-content-between">
                                     <p class="font-h5 font-semibold">Tests</p>
-                                    <p class="font-h5 font-semibold">-</p>
+                                    <p class="font-h5 font-semibold">{{ suitsTestsList.length }}</p>
                                 </div>
                                 <div class="mb-2">
-<!--                                    <p class="font-h5 font-weight-400 px-2 py-1 text-gray-700">Demo test</p>-->
-<!--                                    <p class="font-h5 font-weight-400 px-2 py-1 text-gray-700">Lizard test</p>-->
-<!--                                    <p class="font-h5 font-weight-400 px-2 py-1 text-gray-700">Ecommerce</p>-->
-<!--                                    <p class="font-h5 font-weight-400 px-2 py-1 text-gray-700">Super test</p>-->
+                                    <p 
+                                        v-for="test in suitsTestsList" 
+                                        class="font-h5 font-weight-400 px-2 py-1 text-gray-700">{{ test }}</p>
                                 </div>
                                 <div class="px-2 py-1 d-flex border-b w-100 justify-content-between">
                                     <p class="font-h5 font-semibold">Locations/Engines</p>
-                                    <p class="font-h5 font-semibold">-</p>
+                                    <p class="font-h5 font-semibold">{{ suitsLocationsList.length }}</p>
                                 </div>
-<!--                                <div class="d-flex justify-content-between w-100 px-2 py-1">-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">Carrier default config</p>-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">2</p>-->
-<!--                                </div>-->
-<!--                                <div class="d-flex justify-content-between w-100 px-2 py-1">-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">South America</p>-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">3</p>-->
-<!--                                </div>-->
-<!--                                <div class="d-flex justify-content-between w-100 px-2 py-1">-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">North America</p>-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">2</p>-->
-<!--                                </div>-->
-<!--                                <div class="d-flex justify-content-between w-100 px-2 py-1">-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">West Europe</p>-->
-<!--                                    <p class="font-h5 font-weight-400 text-gray-700">2</p>-->
-<!--                                </div>-->
+                                <div 
+                                    v-for="(count, location) in listLoc"
+                                    class="d-flex justify-content-between w-100 px-2 py-1">
+                                    <p class="font-h5 font-weight-400 text-gray-700">{{ location }}</p>
+                                    <p class="font-h5 font-weight-400 text-gray-700">{{ count }}</p>
+                                </div>
                             </div>
                             <div class="w-100">
                                 <p class="font-h5 text-uppercase font-bold mb-4">suit configuration</p>
@@ -380,7 +423,9 @@ const SuitModal = {
                                             <tr>
                                                 <th data-sortable="true" data-field="name">NAME</th>
                                                 <th data-sortable="true" data-field="entrypoint">entrypoint</th>
-                                                <th data-sortable="true" data-field="runner">runner</th>
+                                                <th data-sortable="true" 
+                                                    data-field="job_type"
+                                                    data-formatter="ParamsTable.job_type">runner</th>
                                                 <th scope="col" data-align="right"
                                                     data-formatter=ParamsTable.actions
                                                     data-events="ParamsTable.action_events">Actions</th>      

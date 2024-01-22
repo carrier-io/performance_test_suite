@@ -16,16 +16,46 @@ var SuiteTable = {
                         </li>
                     </ul>
                 </div>
-                
             </div>
         `
+    },
+    imageFormatter(test) {
+        if (test.test_type === 'be') {
+            if (test.job_type === "perfmeter") {
+                return '<img src="/design-system/static/assets/ico/jmeter.png" width="20">'
+            } else if (row.job_type === "perfgun") {
+                return '<img src="/design-system/static/assets/ico/gatling.png" width="20">'
+            } else {
+                return value
+            }
+        } else if (test.test_type === 'ui') {
+            switch (test.runner) {
+                case 'Sitespeed (browsertime)':
+                    return '<img src="/design-system/static/assets/ico/sitespeed.png" width="20">'
+                case 'Lighthouse':
+                case 'Lighthouse-Nodejs':
+                    return '<img src="/design-system/static/assets/ico/lighthouse.png" width="20">'
+                case 'Observer':
+                    return '<img src="/design-system/static/assets/ico/selenium.png" width="20">'
+                default:
+                    return row.runner
+            }
+        }
+    },
+    job_type(value, row, index) {
+        const images = row.tests.map(test => {
+            return SuiteTable.imageFormatter(test)
+        });
+        const uniqImages = [...new Set(images)]
+        return `<div class="d-flex gap-2">${uniqImages.join('')}</div>`
     },
     action_events: {
         'click .suit_edit': function (e, value, row, index) {
             vueVm.registered_components['suits'].editSuit(row)
         },
         'click .suit_delete': function (e, value, row, index) {
-            vueVm.registered_components['suits'].deleteSuit(index)
+            vueVm.registered_components['suits'].preparedDeletingSuitIds = [row.id];
+            vueVm.registered_components['suits'].openConfirm()
         }
     },
     suitTestFormatter(value, row, index, field) {
@@ -33,7 +63,7 @@ var SuiteTable = {
 
         if (row.tests.length < 3) {
             const listTagsBtn = row.tests.map(test =>
-                `<button class="btn btn-xs btn-painted mr-1 rounded-pill">${test.name}
+                `<button class="btn btn-xs btn-painted mr-1 rounded-pill" style="--brd-color: #EAEDEF">${test.name}
             </button>`
             )
             return listTagsBtn.join('');
@@ -92,6 +122,9 @@ var ParamsTable = {
                 <i class="icon__16x16 icon-delete"></i>
             </button>
         `
+    },
+    job_type(value, row, index) {
+        return SuiteTable.imageFormatter(row)
     },
     removeParamRow: (el, index, rowName, tableId) => {
         $(el.closest('table')).bootstrapTable('remove', {

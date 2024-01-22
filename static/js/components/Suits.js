@@ -4,7 +4,9 @@ const Suits = {
         SuitSearch: SuitSearch,
         SuitModal: SuitModal,
         Locations: Locations,
+        SuitConfirmModal: SuitConfirmModal,
         'input-stepper': InputStepper,
+        loadingDelete: false,
     },
     data() {
         return {
@@ -12,12 +14,24 @@ const Suits = {
             cloud_settings: {},
             currentSuit: {
                 uid: null,
+                name: '',
+                env: '',
+                type: '',
                 tests: [],
             },
+            showConfirm: false,
+            preparedDeletingSuitIds: [],
         }
     },
     mounted() {
         this.fetchAllTests();
+        $('#delete_suits').on('click', e => {
+            const ids_to_delete = $('#tableSuit').bootstrapTable('getSelections').map(
+                item => item.id
+            );
+            this.preparedDeletingSuitIds = ids_to_delete;
+            ids_to_delete.length && this.openConfirm();
+        })
     },
     methods: {
         fetchAllTests() {
@@ -31,11 +45,21 @@ const Suits = {
                 ]
             });
         },
-        deleteSuit(row) {
-
+        openConfirm() {
+            this.showConfirm = !this.showConfirm;
+        },
+        deleteSuit() {
+            this.loadingDelete = true;
+            ApiDeleteSuit(this.preparedDeletingSuitIds).then(res => {
+                showNotify('SUCCESS', 'Suit deleted.');
+                this.openConfirm();
+                $('#tableSuit').bootstrapTable('refresh', { silent: true });
+            }).finally(() => {
+                this.loadingDelete = false;
+            })
         },
         editSuit(row) {
-            this.currentSuit = { ...row };
+            this.currentSuit = _.cloneDeep(row);
             this.$nextTick(() => {
                 $('#suiteModal').modal('show');
             })
@@ -43,6 +67,9 @@ const Suits = {
         clearCurrentSuit() {
             this.currentSuit = {
                 uid: null,
+                name: '',
+                env: '',
+                type: '',
                 tests: [],
             }
         }
@@ -52,19 +79,19 @@ const Suits = {
             <div class="d-grid grid-column-2 gap-4">
                 <div>
                     <Table-Card
-                            @register="register"
-                            instance_name="table_tests"
-                            :adaptive-height="true"
-                            :wide-table-row="true"
-                            header='Suits'
-                            :table_attributes="{
-                                'data-page-size': 5,
-                                id: 'tableSuit',
-                                'data-side-pagination':'client',
-                                'data-unique-id':'id',
-                                'data-url':'/api/v1/performance_test_suite/suite/${getSelectedProjectId()}'
-                            }"
-                            container_classes="h-100"
+                        @register="register"
+                        instance_name="table_tests"
+                        :adaptive-height="true"
+                        :wide-table-row="true"
+                        header='Suits'
+                        :table_attributes="{
+                            'data-page-size': 5,
+                            id: 'tableSuit',
+                            'data-side-pagination':'client',
+                            'data-unique-id':'id',
+                            'data-url':'/api/v1/performance_test_suite/suite/${getSelectedProjectId()}'
+                        }"
+                        container_classes="h-100"
                     >
                         <template #actions="{master}">
                             <div class="d-flex justify-content-end">
@@ -72,7 +99,7 @@ const Suits = {
                                         data-target="#suiteModal">
                                     <i class="icon__18x18 icon-create-element icon__white"></i>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-icon btn-icon__purple" id="delete_tests"><i
+                                <button type="button" class="btn btn-secondary btn-icon btn-icon__purple" id="delete_suits"><i
                                         class="icon__18x18 icon-delete"></i>
                                 </button>
                             </div>
@@ -92,7 +119,8 @@ const Suits = {
                                 tests
                             </th>
                             <th scope="col" data-sortable="true"
-                                data-field="runner"
+                                data-field="tests"
+                                data-formatter="SuiteTable.job_type"
                             >
                                 runner
                             </th>
@@ -220,6 +248,14 @@ const Suits = {
             :current-suit="currentSuit"
             :all-test="allTest">
         </SuitModal>
+        <Transition>
+            <SuitConfirmModal
+                v-if="showConfirm"
+                @close-confirm="openConfirm"
+                :loading-delete="loadingDelete"
+                @delete-suit="deleteSuit">
+            </SuitConfirmModal>
+        </Transition>
     `
 }
 

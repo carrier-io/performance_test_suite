@@ -1,5 +1,5 @@
 const SuitModal = {
-    props: ['all-test', 'current-suit'],
+    props: ['all-test', 'current-suit', 'modal-type'],
     components: {
         SuitSearch: SuitSearch,
     },
@@ -69,7 +69,11 @@ const SuitModal = {
             this.applyClicked = true;
             if (!this.editableSuit.tests.length) showNotify('ERROR', 'Add Test.');
             if (this.isValidFilter) {
-                this.createSuit();
+                if (this.modalType === 'run') {
+                    this.run();
+                } else {
+                    this.createSuit();
+                }
             }
         },
         addTests() {
@@ -287,6 +291,23 @@ const SuitModal = {
                 })
             }
         },
+        run() {
+            const tests = $('#allTests').bootstrapTable('getData');
+            const newSuit = {
+                "project_id": getSelectedProjectId(),
+                "name": this.editableSuit.name,
+                "env": this.editableSuit.env,
+                "type": this.editableSuit.type,
+                "tests": tests,
+                "reporters": []
+            }
+            ApiRunSuit(newSuit, this.editableSuit.id).then(() => {
+                $('#suiteModal').modal('hide');
+                showNotify('SUCCESS', 'Suit updated.');
+                $('#tableSuit').bootstrapTable('refresh', { silent: true });
+                this.resetData();
+            })
+        },
         closeModal(){
             this.resetData();
         },
@@ -323,13 +344,16 @@ const SuitModal = {
                                     class="btn  btn-secondary" data-dismiss="modal" aria-label="Close">
                                     Cancel
                                 </button>
-                                <button type="button"
+                                <button 
+                                    v-if="modalType === 'run'"
+                                    type="button"
+                                    @click="apply"
+                                    class="btn btn-basic d-flex align-items-center ml-2"
+                                >Run</button>
+                                <button v-else type="button"
                                     @click="apply"
                                     class="btn btn-basic d-flex align-items-center ml-2"
                                 >Save</button>
-                                <button type="button"   
-                                    class="btn btn-basic d-flex align-items-center ml-2"
-                                >Save and Start</button>
                             </div>
                         </div>
                     </div>

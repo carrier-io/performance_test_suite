@@ -21,6 +21,7 @@ const Suits = {
             },
             showConfirm: false,
             preparedDeletingSuitIds: [],
+            modalType: null,
         }
     },
     mounted() {
@@ -58,7 +59,8 @@ const Suits = {
                 this.loadingDelete = false;
             })
         },
-        editSuit(row) {
+        editSuit(row, modalType) {
+            this.modalType = modalType;
             this.currentSuit = _.cloneDeep(row);
             this.$nextTick(() => {
                 $('#suiteModal').modal('show');
@@ -96,6 +98,7 @@ const Suits = {
                         <template #actions="{master}">
                             <div class="d-flex justify-content-end">
                                 <button type="button" class="btn btn-basic btn-icon mr-2" data-toggle="modal"
+                                        @click="modalType = 'edit'"
                                         data-target="#suiteModal">
                                     <i class="icon__18x18 icon-create-element icon__white"></i>
                                 </button>
@@ -240,12 +243,12 @@ const Suits = {
                 </template>
             </Table-Card>
         </div>
-        
         <SuitModal
             @register="$root.register"
             instance_name="suit_modal"
             @clear-current-suit="clearCurrentSuit"
             :current-suit="currentSuit"
+            :modal-type="modalType"
             :all-test="allTest">
         </SuitModal>
         <Transition>

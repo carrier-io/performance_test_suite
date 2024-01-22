@@ -49,3 +49,14 @@ const ApiDeleteSuit = async (ids) => {
     })
     return true;
 }
+
+const ApiRunSuit = async (suit, id) => {
+    const res = await fetch(`/api/v1/performance_test_suite/suites/${getSelectedProjectId()}/${id}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(suit)
+    })
+    return res.json();
+}

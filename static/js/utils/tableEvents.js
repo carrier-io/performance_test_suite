@@ -2,6 +2,10 @@ var SuiteTable = {
     actions(value, row, index) {
         return `
             <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs suit_run mr-2" 
+                        data-toggle="tooltip" data-placement="top" title="Run Suite">
+                    <i class="icon__18x18 icon-run"></i>
+                </button>
                 <div class="dropdown_multilevel">
                     <button class="btn btn-default btn-xs btn-table btn-icon__xs" type="button"
                             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -50,8 +54,11 @@ var SuiteTable = {
         return `<div class="d-flex gap-2">${uniqImages.join('')}</div>`
     },
     action_events: {
+        'click .suit_run': function (e, value, row, index) {
+            vueVm.registered_components['suits'].editSuit(row, 'run')
+        },
         'click .suit_edit': function (e, value, row, index) {
-            vueVm.registered_components['suits'].editSuit(row)
+            vueVm.registered_components['suits'].editSuit(row, 'edit')
         },
         'click .suit_delete': function (e, value, row, index) {
             vueVm.registered_components['suits'].preparedDeletingSuitIds = [row.id];

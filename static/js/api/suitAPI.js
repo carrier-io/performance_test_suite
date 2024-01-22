@@ -29,3 +29,23 @@ const ApiCreateSuits = async (suit) => {
     })
     return res.json();
 }
+
+const ApiUpdateSuits = async (suit, id) => {
+    const res = await fetch(`/api/v1/performance_test_suite/suite/${getSelectedProjectId()}/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(suit)
+    })
+    return res.json();
+}
+
+const ApiDeleteSuit = async (ids) => {
+    const params = new URLSearchParams();
+    params.append('id[]', ids.join(','));
+    const res = await fetch(`/api/v1/performance_test_suite/suite/${getSelectedProjectId()}/?${params}`, {
+        method: 'DELETE',
+    })
+    return true;
+}

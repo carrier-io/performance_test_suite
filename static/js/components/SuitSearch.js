@@ -5,6 +5,9 @@ const SuitSearch = {
         },
         isAllChecked: {
             default: false,
+        },
+        initSelectedItem: {
+            default: [],
         }
     },
     data() {
@@ -13,10 +16,6 @@ const SuitSearch = {
             refDropdownId: 'refDropdown'+uuidv4(),
             selectedItems: [],
             closeOnItem: true,
-            clickedItem: {
-                title: '',
-                isChecked: false,
-            },
             foundedItems: [...this.itemsList],
             classTitle: 'complex-list_filled',
         }
@@ -42,8 +41,24 @@ const SuitSearch = {
     },
     watch: {
         selectedItems: function () {
-            this.$refs[this.refSearchId].checked = this.selectedItems.length === this.foundedItems.length ? true : false;
-        }
+            this.$refs[this.refSearchId].checked = this.selectedItems.length === this.foundedItems.length;
+        },
+        initSelectedItem: {
+            handler: function (val) {
+                this.selectedItems = []
+                this.$refs[this.refDropdownId].forEach(el => {
+                    el.checked = false
+                    val.forEach(test => {
+                        // TODO
+                        if (el.id === test.uid || el.id === test.test_uid) {
+                            this.selectedItems.push(test)
+                            el.checked = true
+                        }
+                    })
+                })
+            },
+            deep: true
+        },
     },
     mounted() {
         if (this.isAllChecked) {
@@ -71,7 +86,10 @@ const SuitSearch = {
         setClickedItem(title, { target: { checked }}) {
             this.selectedItems = checked ?
                 [...this.selectedItems, title] :
-                this.selectedItems.filter(item => item !== title);
+                this.selectedItems.filter(item => {
+                    console.log(item, title)
+                    return item.uid !== title.uid
+                });
             this.$emit('select-items', this.selectedItems);
         },
         searchItem({ target: { value }}) {
@@ -125,6 +143,7 @@ const SuitSearch = {
                             class="mb-0 w-100 d-flex align-items-center custom-checkbox">
                             <input
                                 :ref="refDropdownId"
+                                :id="item.uid"
                                 @click="setClickedItem(item, $event)"
                                 type="checkbox">
                             <div class="d-flex w-100 ">

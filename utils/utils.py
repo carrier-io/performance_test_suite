@@ -37,13 +37,12 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
     # if config_only:
     #     event['logger_stop_words'] = list(logger_stop_words)
     #     return event
-
+    reports = {"backend": [], "ui": []}
     for test in event["tests"]:
         test_query = Test.query.filter(Test.get_api_filter(project_id, test["id"])).first()
         test_data = test_query.configure_execution_json(execution=execution)
         test_data["logger_stop_words"] = list(test_data["logger_stop_words"])
         test["execution_json"] = test_data
-        # TODO create report
         from ...backend_performance.utils.utils import get_backend_test_data
         test_data = get_backend_test_data(test_data)
         report = Report(
@@ -70,10 +69,23 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
             engagement=engagement_id
         )
         report.insert()
+        reports["backend"].append(report.id)
         test["REPORT_ID"] = str(report.id)
         test["build_id"] = test_data["build_id"]
 
 
+    from ..models.reports import SuiteReport
+    suite_report = SuiteReport(
+        name=event["name"],
+        uid=str(uuid4()),
+        project_id=project_id,
+        environment=event["env"],
+        type=event["type"],
+        start_time=datetime.utcnow().isoformat("T") + "Z",
+        tests=reports,
+        suite_uid=event["uid"]
+    )
+    suite_report.insert()
     resp = TaskManager(project_id).run_task([event], logger_stop_words=logger_stop_words)
 
     return resp

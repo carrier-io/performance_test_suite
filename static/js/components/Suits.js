@@ -212,6 +212,7 @@ const Suits = {
                         id: 'results_table',
                         'data-side-pagination':'client',
                         'data-unique-id':'id',
+                        'data-url':'/api/v1/performance_test_suite/reports/${getSelectedProjectId()}'
                     }"
                     container_classes="mt-3"
             >
@@ -226,19 +227,15 @@ const Suits = {
                     <th scope="col" data-checkbox="true"></th>
                     <th data-visible="false" data-field="id">index</th>
                     <th scope="col" data-sortable="true" data-field="name"
-                        data-formatter=report_formatters.createLinkToTest>Name</th>
+                        data-formatter=SuiteTable.createLinkToTest>Name</th>
                     <th scope="col" data-sortable="true" data-field="start_time"
-                        data-formatter="report_formatters.date_formatter">Start</th>
+                        data-formatter="SuiteTable.date_formatter">Start</th>
                     <th scope="col" data-sortable="true" data-field="duration">Duration</th>
-                    <th scope="col" data-sortable="true" data-field="vusers">vUsers</th>
                     <th scope="col" data-sortable="true" data-field="environment">Env</th>
                     <th scope="col" data-sortable="true" data-field="type">Test Type</th>
-                    <th scope="col" data-sortable="true" data-field="throughput">TPS</th>
-                    <th scope="col" data-sortable="true" data-field="failure_rate">Fail Rate</th>
                     <th scope="col" data-sortable="true" data-field="tags">Tags</th>
-                    <th scope="col" data-sortable="true" data-field="runner">Runner</th>
                     <th scope="col" data-sortable="true" data-field="test_status"
-                        data-formatter="report_formatters.reportsStatusFormatter">Status
+                        data-formatter="SuiteTable.reportsStatusFormatter">Status
                     </th>
                 </template>
             </Table-Card>

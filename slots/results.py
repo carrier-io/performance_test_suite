@@ -18,19 +18,18 @@ class Slot:  # pylint: disable=E1101,R0903
             # ):
             #     return theme.access_denied_part
             suite_data = report.to_json()
-            # test_data["is_baseline_report"] = report.is_baseline_report
-            # try:
-            #     test_data["failure_rate"] = round((test_data["failures"] / test_data["total"]) * 100, 2)
-            # except:
-            #     test_data["failure_rate"] = 0
-            #
-            # connector = _get_connector(test_data)
-            # test_data["samplers"] = connector.get_sampler_types()
-            # test_data["aggregations"] = connector.get_aggregations_list()
-            #
-            # analytics_control = render_analytics_control(test_data["requests"])
+            backend_reports, ui_reports = [], []
+            for each in suite_data["tests"]["backend"]:
+                from ...backend_performance.models.reports import Report
+                test_report = Report.query.get_or_404(each).to_json()
+                backend_reports.append(test_report)
+            suite_data["tests"]["backend"] = backend_reports
+            for each in suite_data["tests"]["ui"]:
+                from ...ui_performance.models.ui_report import UIReport
+                test_report = UIReport.query.get_or_404(each).to_json()
+                ui_reports.append(test_report)
+            suite_data["tests"]["ui"] = ui_reports
 
-            log.info(f"Suite_data === {suite_data}")
             with context.app.app_context():
                 return self.descriptor.render_template(
                     'suite_results/content.html',

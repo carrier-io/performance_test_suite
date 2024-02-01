@@ -22,4 +22,5 @@ class API(Resource):
         project = self.module.context.rpc_manager.call.project_get_or_404(
             project_id=project_id)
         total, res = api_tools.get(project_id, request.args, SuiteReport)
+        # TODO extend with test results
         return {'total': total, 'rows': [i.to_json() for i in res]}, 200

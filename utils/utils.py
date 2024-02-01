@@ -11,7 +11,6 @@ from pylon.core.tools import log
 # from ..constants import JOB_CONTAINER_MAPPING, JOB_TYPE_MAPPING
 from tools import TaskManager, rpc_tools, api_tools
 from ...backend_performance.models.tests import Test
-from ...backend_performance.models.reports import Report
 
 
 def _calculate_limit(limit, total):
@@ -34,44 +33,69 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
 
     logger_stop_words = event.pop('logger_stop_words', [])
 
-    # if config_only:
-    #     event['logger_stop_words'] = list(logger_stop_words)
-    #     return event
     reports = {"backend": [], "ui": []}
     for test in event["tests"]:
-        test_query = Test.query.filter(Test.get_api_filter(project_id, test["id"])).first()
-        test_data = test_query.configure_execution_json(execution=execution)
-        test_data["logger_stop_words"] = list(test_data["logger_stop_words"])
-        test["execution_json"] = test_data
-        from ...backend_performance.utils.utils import get_backend_test_data
-        test_data = get_backend_test_data(test_data)
-        report = Report(
-            name=test_data["test_name"],
-            project_id=project_id,
-            environment=test_data["environment"],
-            type=test_data["type"],
-            end_time=None,
-            start_time=test_data["start_time"],
-            failures=0,
-            total=0,
-            thresholds_missed=0,
-            throughput=0,
-            vusers=test_data["vusers"],
-            pct50=0, pct75=0, pct90=0, pct95=0, pct99=0,
-            _max=0, _min=0, mean=0,
-            duration=test_data["duration"],
-            build_id=test_data["build_id"],
-            lg_type=test_data["lg_type"],
-            onexx=0, twoxx=0, threexx=0, fourxx=0, fivexx=0,
-            requests=[],
-            test_uid=test_query.uid,
-            test_config=test_query.api_json(),
-            engagement=engagement_id
-        )
-        report.insert()
-        reports["backend"].append(report.id)
-        test["REPORT_ID"] = str(report.id)
-        test["build_id"] = test_data["build_id"]
+        if test["job_type"] in ["perfmeter", "perfgun"]:
+            test_query = Test.query.filter(Test.get_api_filter(project_id, test["id"])).first()
+            test_data = test_query.configure_execution_json(execution=execution)
+            test_data["execution_params"] = update_backend_test_data(test_data["execution_params"],
+                                                                     test["test_parameters"])
+            test_data["logger_stop_words"] = list(test_data["logger_stop_words"])
+            test["execution_json"] = test_data
+            from ...backend_performance.utils.utils import get_backend_test_data
+            from ...backend_performance.models.reports import Report
+            test_data = get_backend_test_data(test_data)
+            report = Report(
+                name=test_data["test_name"],
+                project_id=project_id,
+                environment=test_data["environment"],
+                type=test_data["type"],
+                end_time=None,
+                start_time=test_data["start_time"],
+                failures=0,
+                total=0,
+                thresholds_missed=0,
+                throughput=0,
+                vusers=test_data["vusers"],
+                pct50=0, pct75=0, pct90=0, pct95=0, pct99=0,
+                _max=0, _min=0, mean=0,
+                duration=test_data["duration"],
+                build_id=test_data["build_id"],
+                lg_type=test_data["lg_type"],
+                onexx=0, twoxx=0, threexx=0, fourxx=0, fivexx=0,
+                requests=[],
+                test_uid=test_query.uid,
+                test_config=test_query.api_json(),
+                engagement=engagement_id
+            )
+            report.insert()
+            reports["backend"].append(report.id)
+            test["REPORT_ID"] = str(report.id)
+            test["build_id"] = test_data["build_id"]
+        else:
+            log.info("ui test")
+            from ...ui_performance.models.ui_report import UIReport
+            build_id = str(uuid4())
+            report = UIReport(
+                uid=build_id,
+                name=test["name"],
+                project_id=project_id,
+                start_time=datetime.utcnow().isoformat(" ").split(".")[0],
+                is_active=True,
+                browser="chrome",
+                browser_version="unknown",
+                environment=test["name"],
+                test_type=test["name"],
+                loops=test["loops"],
+                aggregation=test["aggregation"],
+                test_config={},
+                test_uid=test["test_uid"],
+                engagement=engagement_id
+            )
+            report.insert()
+            reports["ui"].append(report.id)
+            test["REPORT_ID"] = str(report.id)
+            test["build_id"] = build_id
 
 
     from ..models.reports import SuiteReport
@@ -86,6 +110,31 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
         suite_uid=event["uid"]
     )
     suite_report.insert()
+    event["suite_report_id"] = suite_report.id
     resp = TaskManager(project_id).run_task([event], logger_stop_words=logger_stop_words)
 
-    return resp
+    return {}
+    #return resp
+
+def update_backend_test_data(test_data, test_parameters):
+    # Convert the input string to a dictionary
+    data = json.loads(test_data)
+
+    # Extract the "cmd" value from the dictionary
+    cmd_value = data.get("cmd", "")
+
+    # Iterate over test_parameters and replace values in cmd_value
+    for param in test_parameters:
+        param_name = param["name"]
+        param_default = param["default"]
+        replacement = f"-J{param_name}={param_default}"
+        cmd_value = cmd_value.replace(f"-J{param_name}={cmd_value.split(f'-J{param_name}=')[1].split(' ')[0]}",
+                                      replacement)
+        # Check if the parameter is not present in cmd_value, then add it
+        if f"-J{param_name}=" not in cmd_value:
+            cmd_value += f" {replacement}"
+
+    # Update the "cmd" value in the dictionary
+    data["cmd"] = cmd_value
+
+    return json.dumps(data)

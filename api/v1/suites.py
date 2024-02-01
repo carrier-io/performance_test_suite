@@ -32,6 +32,8 @@ class API(Resource):
             Suite.id == suite_id
         ).first().to_json()
 
+        suite["tests"] = request.json.get("tests")
+
         resp = run_suite(suite, project_id, config_only=config_only_flag, execution=execution_flag,
                         engagement_id=engagement_id)
         #return resp, resp.get('code', 200)

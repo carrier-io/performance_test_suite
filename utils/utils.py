@@ -1,4 +1,5 @@
 import json
+import time
 from queue import Empty
 from typing import Union, Tuple, Optional
 
@@ -10,7 +11,6 @@ from pylon.core.tools import log
 
 # from ..constants import JOB_CONTAINER_MAPPING, JOB_TYPE_MAPPING
 from tools import TaskManager, rpc_tools, api_tools
-from ...backend_performance.models.tests import Test
 
 
 def _calculate_limit(limit, total):
@@ -36,6 +36,7 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
     reports = {"backend": [], "ui": []}
     for test in event["tests"]:
         if test["job_type"] in ["perfmeter", "perfgun"]:
+            from ...backend_performance.models.tests import Test
             test_query = Test.query.filter(Test.get_api_filter(project_id, test["id"])).first()
             test_data = test_query.configure_execution_json(execution=execution)
             test_data["execution_params"] = update_backend_test_data(test_data["execution_params"],
@@ -73,22 +74,26 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
             test["REPORT_ID"] = str(report.id)
             test["build_id"] = test_data["build_id"]
         else:
-            log.info("ui test")
+            from ...ui_performance.models.ui_tests import UIPerformanceTest
+            test_query = UIPerformanceTest.query.filter(UIPerformanceTest.get_api_filter(project_id, test["id"])).first()
+            test_data = test_query.configure_execution_json(execution=execution)
+            test["execution_json"] = test_data
             from ...ui_performance.models.ui_report import UIReport
             build_id = str(uuid4())
             report = UIReport(
                 uid=build_id,
                 name=test["name"],
                 project_id=project_id,
-                start_time=datetime.utcnow().isoformat(" ").split(".")[0],
+                #start_time=datetime.utcnow().isoformat(" ").split(".")[0],
+                start_time=time.strftime('%Y-%m-%d %H:%M:%S'),
                 is_active=True,
                 browser="chrome",
                 browser_version="unknown",
-                environment=test["name"],
-                test_type=test["name"],
+                environment=next((param["default"] for param in test["test_parameters"] if param["name"] == "env_type"), None),
+                test_type=next((param["default"] for param in test["test_parameters"] if param["name"] == "test_type"), None),
                 loops=test["loops"],
                 aggregation=test["aggregation"],
-                test_config={},
+                test_config=test_query.api_json(),
                 test_uid=test["test_uid"],
                 engagement=engagement_id
             )
@@ -113,8 +118,7 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
     event["suite_report_id"] = suite_report.id
     resp = TaskManager(project_id).run_task([event], logger_stop_words=logger_stop_words)
 
-    return {}
-    #return resp
+    return resp
 
 def update_backend_test_data(test_data, test_parameters):
     # Convert the input string to a dictionary

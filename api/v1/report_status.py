@@ -43,7 +43,7 @@ class API(Resource):
         #     report.end_time = report.start_time
         report.suite_status = test_status
         report.commit()
-        # self.sio.emit("backend_test_status_updated", {"status": test_status.dict(), 'report_id': report_id})
-        # if test_status.percentage == 100:
-        #     self.sio.emit('backend_test_finished', report.to_json())
+        self.sio.emit("test_suite_status_updated", {"status": test_status, 'report_id': report_id})
+        if test_status.percentage == 100:
+            self.sio.emit('test_suite_finished', report.to_json())
         return {"message": test_status["status"]}, 200

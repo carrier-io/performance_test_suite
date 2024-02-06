@@ -1,6 +1,5 @@
 var SuiteTable = {
     reportsStatusFormatter(value, row, index) {
-        console.log(value)
         switch (value.status) {
             case 'Failed':
                 return `<div data-toggle="tooltip" data-placement="top" title="${value.description}" style="color: var(--red)"><i class="fas fa-exclamation-circle error"></i> ${value.status}</div>`

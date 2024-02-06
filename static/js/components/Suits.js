@@ -33,6 +33,23 @@ const Suits = {
             this.preparedDeletingSuitIds = ids_to_delete;
             ids_to_delete.length && this.openConfirm();
         })
+        socket.on("test_suite_status_updated", data => {
+            $('#results_table').bootstrapTable('updateByUniqueId', {
+                id: data['report_id'],
+                row: {
+                    'suite_status': data['status']
+                }
+            })
+        })
+        socket.on("test_suite_finished", data => {
+            console.log(data)
+            $('#results_table').bootstrapTable('updateByUniqueId', {
+                id: data['id'],
+                row: {
+                    'suite_status': data['status']
+                }
+            })
+        })
     },
     methods: {
         fetchAllTests() {
@@ -136,6 +153,7 @@ const Suits = {
                         </template>
                     </Table-Card>
                 </div>
+                
                 <div>
                     <Table-Card
                             @register="register"
@@ -234,7 +252,7 @@ const Suits = {
                     <th scope="col" data-sortable="true" data-field="environment">Env</th>
                     <th scope="col" data-sortable="true" data-field="type">Test Type</th>
                     <th scope="col" data-sortable="true" data-field="tags">Tags</th>
-                    <th scope="col" data-sortable="true" data-field="test_status"
+                    <th scope="col" data-sortable="true" data-field="suite_status"
                         data-formatter="SuiteTable.reportsStatusFormatter">Status
                     </th>
                 </template>

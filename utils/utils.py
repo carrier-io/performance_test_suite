@@ -40,12 +40,15 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
             test_query = Test.query.filter(Test.get_api_filter(project_id, test["id"])).first()
             test_data = test_query.configure_execution_json(execution=execution)
             test_data["execution_params"] = update_backend_test_data(test_data["execution_params"],
-                                                                     test["test_parameters"])
+                                                                     test["test_parameters"], test["job_type"])
             test_data["logger_stop_words"] = list(test_data["logger_stop_words"])
             test["execution_json"] = test_data
             from ...backend_performance.utils.utils import get_backend_test_data
             from ...backend_performance.models.reports import Report
             test_data = get_backend_test_data(test_data)
+            log.info("**************************** Backend test")
+            log.info(test)
+            log.info("*****************************************")
             report = Report(
                 name=test_data["test_name"],
                 project_id=project_id,
@@ -84,7 +87,6 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
                 uid=build_id,
                 name=test["name"],
                 project_id=project_id,
-                #start_time=datetime.utcnow().isoformat(" ").split(".")[0],
                 start_time=time.strftime('%Y-%m-%d %H:%M:%S'),
                 is_active=True,
                 browser="chrome",
@@ -120,25 +122,39 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
 
     return resp
 
-def update_backend_test_data(test_data, test_parameters):
+def update_backend_test_data(test_data, test_parameters, job_type):
     # Convert the input string to a dictionary
     data = json.loads(test_data)
 
     # Extract the "cmd" value from the dictionary
-    cmd_value = data.get("cmd", "")
+    if job_type == "perfmeter":
+        cmd_value = data.get("cmd", "")
+    else:
+        cmd_value = data.get("GATLING_TEST_PARAMS", "")
 
     # Iterate over test_parameters and replace values in cmd_value
     for param in test_parameters:
         param_name = param["name"]
         param_default = param["default"]
-        replacement = f"-J{param_name}={param_default}"
-        cmd_value = cmd_value.replace(f"-J{param_name}={cmd_value.split(f'-J{param_name}=')[1].split(' ')[0]}",
+        if job_type == "perfmeter":
+            replacement = f"-J{param_name}={param_default}"
+            cmd_value = cmd_value.replace(f"-J{param_name}={cmd_value.split(f'-J{param_name}=')[1].split(' ')[0]}",
                                       replacement)
-        # Check if the parameter is not present in cmd_value, then add it
-        if f"-J{param_name}=" not in cmd_value:
-            cmd_value += f" {replacement}"
+            # Check if the parameter is not present in cmd_value, then add it
+            if f"-J{param_name}=" not in cmd_value:
+                cmd_value += f" {replacement}"
+        else:
+            replacement = f"-D{param_name}={param_default}"
+            cmd_value = cmd_value.replace(f"-D{param_name}={cmd_value.split(f'-D{param_name}=')[1].split(' ')[0]}",
+                                          replacement)
+            # Check if the parameter is not present in cmd_value, then add it
+            if f"-D{param_name}=" not in cmd_value:
+                cmd_value += f" {replacement}"
 
     # Update the "cmd" value in the dictionary
-    data["cmd"] = cmd_value
+    if job_type == "perfmeter":
+        data["cmd"] = cmd_value
+    else:
+        data["GATLING_TEST_PARAMS"] = cmd_value
 
     return json.dumps(data)

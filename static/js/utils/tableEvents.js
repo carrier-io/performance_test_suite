@@ -47,7 +47,7 @@ var SuiteTable = {
         if (test.test_type === 'be') {
             if (test.job_type === "perfmeter") {
                 return '<img src="/design-system/static/assets/ico/jmeter.png" width="20">'
-            } else if (row.job_type === "perfgun") {
+            } else if (test.job_type === "perfgun") {
                 return '<img src="/design-system/static/assets/ico/gatling.png" width="20">'
             } else {
                 return value

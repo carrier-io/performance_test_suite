@@ -22,5 +22,23 @@ class API(Resource):
         project = self.module.context.rpc_manager.call.project_get_or_404(
             project_id=project_id)
         total, res = api_tools.get(project_id, request.args, SuiteReport)
-        # TODO extend with test results
         return {'total': total, 'rows': [i.to_json() for i in res]}, 200
+
+    def delete(self, project_id: int):
+        project = self.module.context.rpc_manager.call.project_get_or_404(
+            project_id=project_id)
+        try:
+            delete_ids = list(map(int, request.args["id[]"].split(',')))
+        except TypeError:
+            return 'IDs must be integers', 400
+
+        filter_ = and_(
+            SuiteReport.project_id == project.id,
+            SuiteReport.id.in_(delete_ids)
+        )
+        SuiteReport.query.filter(
+            filter_
+        ).delete()
+        SuiteReport.commit()
+
+        return {'ids': delete_ids}, 200

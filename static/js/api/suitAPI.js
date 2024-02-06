@@ -60,3 +60,10 @@ const ApiRunSuit = async (suit, id) => {
     })
     return res.json();
 }
+
+const ApiSuitResults = async (reportId) => {
+    const res = await fetch(`/api/v1/backend_performance/reports/${getSelectedProjectId()}?report_id=49`, {
+        method: 'GET',
+    })
+    return res.json();
+}

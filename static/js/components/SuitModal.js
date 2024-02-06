@@ -304,6 +304,7 @@ const SuitModal = {
             ApiRunSuit(newSuit, this.editableSuit.id).then(() => {
                 $('#suiteModal').modal('hide');
                 showNotify('SUCCESS', 'Suit updated.');
+                $('#results_table').bootstrapTable('refresh', { silent: true });
                 $('#tableSuit').bootstrapTable('refresh', { silent: true });
                 this.resetData();
             })

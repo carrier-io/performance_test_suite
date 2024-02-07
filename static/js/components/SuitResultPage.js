@@ -13,8 +13,10 @@ const SuitResults = {
     },
     methods: {
         createTestsTable() {
-            const tableData = [ ...this.result.tests.backend, ...this.result.tests.ui];
-            $('#tableTests').bootstrapTable('load', tableData)
+            const tableData = [
+                ...this.result.tests.backend.map(row => ({ ...row, test_type: 'backend'})),
+                ...this.result.tests.ui.map(row => ({ ...row, test_type: 'ui'}))];
+            $('#tableTests').bootstrapTable('load', tableData);
         },
     },
     template: `
@@ -56,7 +58,7 @@ const SuitResults = {
                     <template #table_headers>
                         <th scope="col" data-checkbox="true"></th>
                         <th data-visible="false" data-field="id">index</th>
-                        <th scope="col" data-sortable="true" data-field="name">Name</th>
+                        <th scope="col" data-sortable="true" data-field="name" data-formatter="SuiteTable.createLinkToOriginTest">Name</th>
                         <th scope="col" data-sortable="true" data-field="total">TTL REQ, COUNT</th>
                         <th scope="col" data-sortable="true" data-field="throughput">THRGHPT, REQ/SEC</th>
                         <th scope="col" data-sortable="true" data-field="min">MIN, MS</th>

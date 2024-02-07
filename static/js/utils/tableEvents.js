@@ -17,7 +17,10 @@ var SuiteTable = {
         return new Date(value).toLocaleString()
     },
     createLinkToTest(value, row, index) {
-        return `<a class="test form-control-label font-h5" href="./results?result_id=${row.id}" role="button">${row.name}</a>`
+        return `<a class="test form-control-label font-h5" target="_blank" href="./results?result_id=${row.id}" role="button">${row.name}</a>`
+    },
+    createLinkToOriginTest(value, row, index) {
+        return `<a class="test form-control-label font-h5" target="_blank" href="/-/performance/${row.test_type}/results?result_id=${row.id}" role="button">${row.name}</a>`
     },
     actions(value, row, index) {
         return `

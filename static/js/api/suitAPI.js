@@ -60,3 +60,12 @@ const ApiRunSuit = async (suit, id) => {
     })
     return res.json();
 }
+
+const ApiDeleteReport = async (ids) => {
+    const params = new URLSearchParams();
+    params.append('id[]', ids.join(','));
+    const res = await fetch(`/api/v1/performance_test_suite/reports/${getSelectedProjectId()}/?${params}`, {
+        method: 'DELETE',
+    })
+    return res.json();
+}

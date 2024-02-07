@@ -278,14 +278,14 @@ const SuitModal = {
             if (this.editableSuit.id) {
                 ApiUpdateSuits(newSuit, this.editableSuit.id).then(() => {
                     $('#suiteModal').modal('hide');
-                    showNotify('SUCCESS', 'Suit updated.');
+                    showNotify('SUCCESS', 'Suite updated.');
                     $('#tableSuit').bootstrapTable('refresh', { silent: true });
                     this.resetData();
                 })
             } else {
                 ApiCreateSuits(newSuit).then(() => {
                     $('#suiteModal').modal('hide');
-                    showNotify('SUCCESS', 'Suit created.');
+                    showNotify('SUCCESS', 'Suite created.');
                     $('#tableSuit').bootstrapTable('refresh', { silent: true });
                     this.resetData();
                 })
@@ -303,7 +303,7 @@ const SuitModal = {
             }
             ApiRunSuit(newSuit, this.editableSuit.id).then(() => {
                 $('#suiteModal').modal('hide');
-                showNotify('SUCCESS', 'Suit updated.');
+                showNotify('SUCCESS', 'Suite run.');
                 $('#results_table').bootstrapTable('refresh', { silent: true });
                 $('#tableSuit').bootstrapTable('refresh', { silent: true });
                 this.resetData();
@@ -337,7 +337,7 @@ const SuitModal = {
                     <div class="modal-header">
                         <div class="row w-100">
                             <div class="col">
-                                <h2>Create Suit</h2>
+                                <h2>Create Suite</h2>
                             </div>
                             <div class="col-xs d-flex">
                                 <button type="button" 
@@ -362,7 +362,7 @@ const SuitModal = {
                         <div class="d-flex">
                             <div style="width: 260px; margin-right: 50px;">
                                 <p class="font-h5 text-uppercase font-bold mb-4">description</p>
-                                <p class="font-h5 font-semibold mb-1">Suit name</p>
+                                <p class="font-h5 font-semibold mb-1">Suite name</p>
                                 <div class="flex-grow-1 cell-input mb-2">
                                     <div class="custom-input need-validation" 
                                         :class="{'invalid-input': !showError(editableSuit.name)}"
@@ -371,11 +371,11 @@ const SuitModal = {
                                             type="text"
                                             :disabled="editableSuit.uid"
                                             v-model="editableSuit.name"
-                                            placeholder="Suit's name">
+                                            placeholder="Suite's name">
                                         <span class="input_error-msg">Name is required!</span>
                                     </div>
                                 </div>
-                                <p class="font-h5 font-semibold mb-1">Suit type</p>
+                                <p class="font-h5 font-semibold mb-1">Suite type</p>
                                 <div class="flex-grow-1 cell-input mb-2">
                                     <div class="custom-input need-validation" 
                                         :class="{'invalid-input': !showError(editableSuit.type)}"
@@ -383,11 +383,11 @@ const SuitModal = {
                                         <input
                                             type="text"
                                             v-model="editableSuit.type"
-                                            placeholder="Suit's type">
+                                            placeholder="Suite's type">
                                         <span class="input_error-msg">Type is required!</span>
                                     </div>
                                 </div>
-                                <p class="font-h5 font-semibold mb-1">Suit enviroment</p>
+                                <p class="font-h5 font-semibold mb-1">Suite enviroment</p>
                                 <div class="flex-grow-1 cell-input mb-4">
                                     <div class="custom-input need-validation" 
                                         :class="{'invalid-input': !showError(editableSuit.env)}"
@@ -395,7 +395,7 @@ const SuitModal = {
                                         <input
                                             type="text"
                                             v-model="editableSuit.env"
-                                            placeholder="Suit's enviroment">
+                                            placeholder="Suite's enviroment">
                                         <span class="input_error-msg">Type is required!</span>
                                     </div>
                                 </div>
@@ -422,7 +422,7 @@ const SuitModal = {
                                 </div>
                             </div>
                             <div class="w-100">
-                                <p class="font-h5 text-uppercase font-bold mb-4">suit configuration</p>
+                                <p class="font-h5 text-uppercase font-bold mb-4">suite configuration</p>
                                 <p class="font-h5 font-semibold mb-1">Tests</p>
                                 <div class="d-flex mb-4">
                                     <SuitSearch

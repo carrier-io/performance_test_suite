@@ -6,7 +6,6 @@ const Suits = {
         Locations: Locations,
         SuitConfirmModal: SuitConfirmModal,
         'input-stepper': InputStepper,
-        loadingDelete: false,
     },
     data() {
         return {
@@ -20,8 +19,10 @@ const Suits = {
                 tests: [],
             },
             showConfirm: false,
-            preparedDeletingSuitIds: [],
+            preparedDeletingIds: [],
             modalType: null,
+            deletingTitle: null,
+            loadingDelete: false,
         }
     },
     mounted() {
@@ -30,7 +31,16 @@ const Suits = {
             const ids_to_delete = $('#tableSuit').bootstrapTable('getSelections').map(
                 item => item.id
             );
-            this.preparedDeletingSuitIds = ids_to_delete;
+            this.preparedDeletingIds = ids_to_delete;
+            this.deletingTitle = 'suite';
+            ids_to_delete.length && this.openConfirm();
+        });
+        $('#delete_results').on('click', e => {
+            const ids_to_delete = $('#results_table').bootstrapTable('getSelections').map(
+                item => item.id
+            );
+            this.preparedDeletingIds = ids_to_delete;
+            this.deletingTitle = 'report';
             ids_to_delete.length && this.openConfirm();
         })
         socket.on("test_suite_status_updated", data => {
@@ -42,7 +52,6 @@ const Suits = {
             })
         })
         socket.on("test_suite_finished", data => {
-            console.log(data)
             $('#results_table').bootstrapTable('updateByUniqueId', {
                 id: data['id'],
                 row: {
@@ -68,8 +77,8 @@ const Suits = {
         },
         deleteSuit() {
             this.loadingDelete = true;
-            ApiDeleteSuit(this.preparedDeletingSuitIds).then(res => {
-                showNotify('SUCCESS', 'Suit deleted.');
+            ApiDeleteSuit(this.preparedDeletingIds).then(res => {
+                showNotify('SUCCESS', 'Suite deleted.');
                 this.openConfirm();
                 $('#tableSuit').bootstrapTable('refresh', { silent: true });
             }).finally(() => {
@@ -83,6 +92,16 @@ const Suits = {
                 $('#suiteModal').modal('show');
             })
         },
+        deleteReport() {
+            this.loadingDelete = true;
+            ApiDeleteReport(this.preparedDeletingIds).then(res => {
+                showNotify('SUCCESS', 'Report deleted.');
+                this.openConfirm();
+                $('#results_table').bootstrapTable('refresh', { silent: true });
+            }).finally(() => {
+                this.loadingDelete = false;
+            })
+        },
         clearCurrentSuit() {
             this.currentSuit = {
                 uid: null,
@@ -91,6 +110,9 @@ const Suits = {
                 type: '',
                 tests: [],
             }
+        },
+        deleteItems(title) {
+            title === 'suite' ? this.deleteSuit() : this.deleteReport()
         }
     },
     template: `
@@ -102,7 +124,7 @@ const Suits = {
                         instance_name="table_tests"
                         :adaptive-height="true"
                         :wide-table-row="true"
-                        header='Suits'
+                        header='Suites'
                         :table_attributes="{
                             'data-page-size': 5,
                             id: 'tableSuit',
@@ -270,8 +292,9 @@ const Suits = {
             <SuitConfirmModal
                 v-if="showConfirm"
                 @close-confirm="openConfirm"
+                :title="deletingTitle"
                 :loading-delete="loadingDelete"
-                @delete-suit="deleteSuit">
+                @delete-items="deleteItems">
             </SuitConfirmModal>
         </Transition>
     `

@@ -14,7 +14,7 @@ const SuitResults = {
     methods: {
         createTestsTable() {
             const tableData = [ ...this.result.tests.backend, ...this.result.tests.ui];
-            $('#tableTests').bootstrapTable('load', tableData)
+            $('#tableTests').bootstrapTable('load', tableData);
         },
     },
     template: `

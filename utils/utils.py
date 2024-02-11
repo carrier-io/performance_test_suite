@@ -46,9 +46,6 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
             from ...backend_performance.utils.utils import get_backend_test_data
             from ...backend_performance.models.reports import Report
             test_data = get_backend_test_data(test_data)
-            log.info("**************************** Backend test")
-            log.info(test)
-            log.info("*****************************************")
             report = Report(
                 name=test_data["test_name"],
                 project_id=project_id,
@@ -101,7 +98,7 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
             )
             report.insert()
             reports["ui"].append(report.id)
-            test["REPORT_ID"] = str(report.id)
+            test["REPORT_ID"] = str(report.uid)
             test["build_id"] = build_id
 
 

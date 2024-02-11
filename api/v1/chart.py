@@ -54,7 +54,7 @@ class API(Resource):
             results.append(_res)
         for each in suite_report["tests"]["ui"]:
             _res = {}
-            name, linechart_data, barchart_data = self.get_linechart_data(project_id, each)
+            name, linechart_data, barchart_data = self.get_ui_charts_data(project_id, each)
             _res["linechart_data"] = linechart_data
             _res["barchart_data"] = barchart_data
             _res["name"] = name
@@ -62,7 +62,7 @@ class API(Resource):
             results.append(_res)
         return results
 
-    def get_linechart_data(self, project_id, report_id):
+    def get_ui_charts_data(self, project_id, report_id):
         from ....ui_performance.models.ui_report import UIReport
         report = UIReport.query.filter(
             UIReport.project_id == project_id,

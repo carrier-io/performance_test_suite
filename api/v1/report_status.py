@@ -1,5 +1,6 @@
 from flask import request, make_response
 from flask_restful import Resource
+from datetime import datetime
 
 from ...models.reports import SuiteReport
 from tools import auth
@@ -39,11 +40,13 @@ class API(Resource):
             project_id=project_id)
         report = SuiteReport.query.filter_by(project_id=project.id, id=report_id).first()
         test_status = request.json["test_status"]
-        # if test_status.description == "Failed update report":
-        #     report.end_time = report.start_time
+        if test_status["status"] == "Failed":
+            report.end_time = report.start_time
         report.suite_status = test_status
+        if test_status["percentage"] == 100:
+            report.end_time = datetime.utcnow().isoformat("T") + "Z"
+            self.sio.emit('test_suite_finished', report.to_json())
         report.commit()
         self.sio.emit("test_suite_status_updated", {"status": test_status, 'report_id': report_id})
-        if test_status["percentage"] == 100:
-            self.sio.emit('test_suite_finished', report.to_json())
+
         return {"message": test_status["status"]}, 200

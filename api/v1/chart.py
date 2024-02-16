@@ -25,6 +25,7 @@ class API(Resource):
     def get(self, project_id: int, report_id: int):
         project = self.module.context.rpc_manager.call.project_get_or_404(
             project_id=project_id)
+        request_args = request.args.to_dict(flat=True)
         results = []
         suite_report = SuiteReport.query.filter(
             SuiteReport.project_id == project_id,
@@ -37,16 +38,18 @@ class API(Resource):
                 Report.project_id == project_id,
                 Report.id == each
             ).first().to_json()
+
             args = {'build_id': backend_report["build_id"],
                     'test_name': backend_report["name"],
                     'lg_type': backend_report["lg_type"],
                     'sampler': 'REQUEST',
-                    'aggregator': 'auto',
+                    'aggregator': request_args.get("aggregation", "auto"),
                     'status': 'all',
                     'start_time': backend_report["start_time"],
                     'end_time': backend_report["end_time"],
                     'low_value': '0',
                     'high_value': '100'}
+
             connector = MinioConnector(**args)
             _res = requests_summary(connector)
             _res["name"] = backend_report["name"]

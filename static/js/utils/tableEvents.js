@@ -16,6 +16,9 @@ var SuiteTable = {
     date_formatter(value) {
         return new Date(value).toLocaleString()
     },
+    duration_formatter(value, row, index) {
+        console.log(row)
+    },
     createLinkToTest(value, row, index) {
         return `<a class="test form-control-label font-h5" target="_blank" href="./results?result_id=${row.id}" role="button">${row.name}</a>`
     },

@@ -1,6 +1,7 @@
 const SuitResults = {
     props: ['instance_name', 'result'],
     components: {
+        SuitCharts: SuitCharts,
     },
     data() {
         return {
@@ -21,6 +22,11 @@ const SuitResults = {
     },
     template: `
         <div class="p-3">
+            <div class="card p-28 mb-3">
+                <SuitCharts>
+                
+                </SuitCharts>
+            </div>
             <div class="card">
                 <div class="p-28 pb-20">
                     <div class="d-flex justify-content-between">

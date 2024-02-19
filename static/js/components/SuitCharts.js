@@ -1,3 +1,4 @@
+var lineChart
 const SuitCharts = {
     components: {
         SuitTestDropdown: SuitTestDropdown
@@ -5,7 +6,6 @@ const SuitCharts = {
     data() {
         lineChart: null
         return {
-            lineChart: null,
             initialData: null,
             legendList: [],
             selectedLegend: [],
@@ -13,10 +13,8 @@ const SuitCharts = {
             pagesCount: 0,
             isShowDottedLine: true,
             labels: [],
-            formattedTests: {
-                be: [],
-                ui: [],
-            },
+            tests: [],
+            selectedTests: [],
             valuesName: ['load_time', 'tti', 'fcp', 'dom', 'lcp', 'cls', 'tbt', 'fvc', 'lvc'],
             barColors: [
                 '#5933C6',
@@ -42,73 +40,38 @@ const SuitCharts = {
         this.loading = true;
         ApiChartData(resultId).then(data => {
             this.loading = false;
-            this.formattedTests = {
-                be: [],
-                ui: [],
-            }
-            data.forEach(test => {
-                if (test.hasOwnProperty('linechart_data')) {
-                    this.formattedTests.ui.push(test['linechart_data']);
-                    // mock
-                    const mockTests = test['linechart_data'].map(test => {
-                        const newTest = {
-                            datasets: {},
-                            labels: test.labels
-                        }
-                        for (let metric in test.datasets) {
-                            newTest.datasets[metric] = test.datasets[metric].map(v => +v + 100)
-                        }
-                        return newTest
-                    })
-                    this.formattedTests.ui.push(mockTests);
-                } else {
-                    this.formattedTests.be.push(test);
-                    // mock
-                    const mockTests = test.datasets.map(line => {
-                        const formattedLine = line.data.map(val => val + 200);
-                        return {
-                            ...line,
-                            data: formattedLine,
-                            label: `${line.label}_2`,
-                        }
-                    })
-                    this.formattedTests.be.push({
-                        ...test,
-                        datasets: mockTests,
-                        name: "be_test_2",
-                        type: "backend_2",
-                    });
-                }
-            })
-            if (this.formattedTests.be.length) {
-                this.generateDatasets(this.formattedTests.be, this.formattedTests.ui)
-            }
+            this.tests = data;
+            this.generateDatasets(data);
         })
     },
     watch: {
         metric(newValue, oldValue) {
-            this.lineChart.destroy();
-            this.lineChart = null;
-            this.generateDatasets(this.formattedTests.be, this.formattedTests.ui)
+            lineChart.destroy();
+            lineChart = null;
+            this.generateDatasets(this.tests)
         }
     },
     computed: {
         allTests() {
-            if (this.formattedTests.be.length && this.formattedTests.ui.length) {
-                return [ ...this.formattedTests.be.map(test => test.name), ...this.formattedTests.ui[0].map(test => test.name)]
+            if (this.tests.length) {
+                return this.tests.map(t => t.name);
             } return []
-
+        },
+        isAllSelected() {
+            return (this.selectedLegend.length < this.legendList.length) && this.selectedLegend.length > 0
+        },
+        isAllSelectCbxFilled() {
+            return this.selectedLegend.length === this.legendList.length
         }
-        // isAllSelected() {
-        //     return (this.selectedLegend.length < this.legendList.length) && this.selectedLegend.length > 0
-        // },
-        // isAllSelectCbxFilled() {
-        //     return this.selectedLegend.length === this.legendList.length
-        // }
     },
     methods: {
-        selectTest(test) {
-            this.formattedTests.be = this.formattedTests.be.filter(test => test);
+        selectTest(tests) {
+            this.selectedTests = this.tests.filter(t => tests.includes(t.name));
+            // this.lineChart.destroy();
+            lineChart.destroy();
+            // this.lineChart = null;
+            lineChart = null;
+            this.generateDatasets(this.selectedTests)
         },
         convertDate(inputTime) {
             const parts = inputTime.split(/[- :]/);
@@ -116,65 +79,66 @@ const SuitCharts = {
             const isoDateTime = dateTime.toISOString().replace(/\.\d{3}Z$/, 'Z');
             return isoDateTime;
         },
-        generateDatasets(be, ui) {
+        generateDatasets(tests) {
             let beData = [];
-            be.forEach(t => {
-                const ds = t.datasets.map(test => {
-                    this.selectedLegend.push(test.label);
-                    return {
-                        backgroundColor: test.borderColor,
-                        borderColor: test.borderColor,
-                        label: test.label,
-                        data: test.data.map((res, i) => {
-                            return {
-                                y: res,
-                                x: t.labels[i],
-                            }
-                        }),
-                        yAxisID: test.yAxisID,
-                    }
-                })
-                beData = [...beData, ...ds];
-            });
-            // ui
             let uiData = [];
             const dottedDatasets = [];
-            ui.forEach((test) => {
-                dottedDatasets.push(...this.generateDottedDatasets(test));
-                const formattedUiData = test.map((page, index) => {
-                    this.selectedLegend.push(page.name)
-                    const ds = {
-                        backgroundColor: this.barColors[index],
-                        borderColor: this.barColors[index],
-                        label: page.name,
-                    };
-                    const data = page.datasets[this.metric].map((value, i) => {
+            this.selectedLegend = [];
+            tests.forEach(t => {
+                if (t.type === 'backend') {
+                    const ds = t.datasets.map(test => {
+                        this.selectedLegend.push(`[${t.name}] ${test.label}`);
                         return {
-                            y: value,
-                            x: this.convertDate(page.labels[i]),
+                            backgroundColor: test.borderColor,
+                            borderColor: test.borderColor,
+                            label: `[${t.name}] ${test.label}`,
+                            data: test.data.map((res, i) => {
+                                return {
+                                    y: res,
+                                    x: t.labels[i],
+                                }
+                            }),
+                            yAxisID: test.yAxisID,
                         }
-                    });
-                    return {
-                        ...ds,
-                        data,
-                    }
-                })
-                uiData.push(...formattedUiData);
-            })
-
+                    })
+                    beData = [...beData, ...ds];
+                }
+                if (t.type === 'ui') {
+                    const formattedUiData = t['linechart_data'].map((page, index) => {
+                        this.selectedLegend.push(`[${t.name}] ${page.name}`)
+                        const ds = {
+                            backgroundColor: this.barColors[index],
+                            borderColor: this.barColors[index],
+                            label: `[${t.name}] ${page.name}`,
+                        };
+                        const data = page.datasets[this.metric].map((value, i) => {
+                            return {
+                                y: value,
+                                x: this.convertDate(page.labels[i]),
+                            }
+                        });
+                        return {
+                            ...ds,
+                            data,
+                        }
+                    })
+                    uiData.push(...formattedUiData);
+                    dottedDatasets.push(...this.generateDottedDatasets(t));
+                }
+            });
             const preparedData = {
                 datasets: [ ...beData, ...uiData, ...dottedDatasets],
             };
             this.drawCanvas(preparedData);
         },
-        generateDottedDatasets(uiTests) {
-            const countIndex = uiTests[0].labels.length;
+        generateDottedDatasets(uiTest) {
+            const countIndex = uiTest['linechart_data'][0].labels.length;
             const dottedData = [];
 
             for (let i = 0; i < countIndex; i++) {
                 const data = [];
-                uiTests.forEach((page) => {
-                    // if (!this.selectedLegend.includes(page.name)) return
+                uiTest['linechart_data'].forEach((page) => {
+                    if (!this.selectedLegend.includes(`[${uiTest.name}] ${page.name}`)) return
                     data.push({
                         y: page.datasets[this.metric][i],
                         x: this.convertDate(page.labels[i]),
@@ -186,7 +150,7 @@ const SuitCharts = {
                 dottedData.push({
                     borderDash: [10,5],
                     data,
-                    label: `loop ${i}`
+                    label: `[${uiTest.name}] loop ${i}`
                 })
             }
             return dottedData;
@@ -239,28 +203,41 @@ const SuitCharts = {
                     }
                 },
             });
-            this.lineChart = chart;
-            this.legendList = chart.options.plugins.legend.labels.generateLabels(chart);
+            lineChart = chart;
+            this.legendList = chart.options.plugins.legend.labels.generateLabels(chart).filter(l => {
+                if (!l.text.includes('loop')) return l
+            });
         },
         selectLegend(legend) {
-            console.log(legend)
-            console.log(this.lineChart)
-            console.log(this.selectedLegend)
-            let hidden = !this.lineChart.getDatasetMeta(legend.datasetIndex).hidden;
+            // let hidden = !this.lineChart.getDatasetMeta(legend.datasetIndex).hidden;
+            let hidden = !lineChart.getDatasetMeta(legend.datasetIndex).hidden;
             this.selectedLegend = hidden
                 ? this.selectedLegend.filter(lg => lg !== legend.text)
                 : [...this.selectedLegend, legend.text];
-            this.lineChart.data.datasets.forEach((ds, i) => {
-                if (this.lineChart.getDatasetMeta(legend.datasetIndex).label === ds.label) {
-                    this.lineChart.getDatasetMeta(i).hidden = hidden;
+            // this.lineChart.data.datasets.forEach((ds, i) => {
+            //     if (this.lineChart.getDatasetMeta(legend.datasetIndex).label === ds.label) {
+            //         this.lineChart.getDatasetMeta(i).hidden = hidden;
+            //     }
+            // })
+            lineChart.data.datasets.forEach((ds, i) => {
+                if (lineChart.getDatasetMeta(legend.datasetIndex).label === ds.label) {
+                    lineChart.getDatasetMeta(i).hidden = hidden;
                 }
             })
-            // this.combineDatasets();
-            this.lineChart.update()
+            this.combineDatasets();
+            lineChart.update()
         },
         combineDatasets() {
-            // this.lineChart.data.datasets = [...this.lineChart.data.datasets.slice(0, this.pagesCount),
-            //     ...this.generateDottedDatasets()];
+            const dottedDatasets = [];
+            this.selectedTests.forEach(t => {
+                if (t.type === 'ui') {
+                    dottedDatasets.push(...this.generateDottedDatasets(t));
+                }
+            });
+            lineChart.data.datasets = [...lineChart.data.datasets.filter(ds => {
+                if (!ds.label.includes('loop')) return ds;
+            }),
+                ...dottedDatasets];
             // this.lineChart.data.datasets.forEach((ds, i) => {
             //     if (i >= this.pagesCount) {
             //         this.lineChart.getDatasetMeta(i).hidden = !this.isShowDottedLine;
@@ -268,28 +245,32 @@ const SuitCharts = {
             // })
         },
         selectAll({ target }) {
-            // const hidden = !target.checked;
-            //
-            // this.selectedLegend = hidden
-            //     ? []
-            //     : this.legendList.map(lg => lg.text)
-            //
-            // this.lineChart.data.datasets.forEach((ds, i) => {
-            //     this.lineChart.getDatasetMeta(i).hidden = hidden;
-            //     this.$refs['legendCbx'].forEach(cbx => {
-            //         cbx.checked = !hidden;
-            //     })
-            // })
-            // if (!hidden) {
-            //     this.combineDatasets();
-            // }
-            //
-            // this.lineChart.update()
+            const hidden = !target.checked;
+            this.selectedLegend = hidden
+                ? []
+                : this.legendList.map(lg => lg.text)
+
+            lineChart.data.datasets.forEach((ds, i) => {
+                lineChart.getDatasetMeta(i).hidden = hidden;
+                this.$refs['legendCbx'].forEach(cbx => {
+                    cbx.checked = !hidden;
+                })
+            })
+            if (!hidden) {
+                this.combineDatasets();
+            }
+            lineChart.update()
         }
     },
     template: `
     
         <div class="d-flex align-items-center">
+            <SuitTestDropdown
+                v-if="allTests.length > 0"
+                @select-items="selectTest"
+                :is-all-checked="true"
+                :items-list="allTests">
+            </SuitTestDropdown>
             <div class="selectpicker-titled mr-3">
                 <span class="font-h6 font-semibold px-3 item__left">METRIC</span>
                 <select class="selectpicker" data-style="item__right" id="metric">
@@ -304,13 +285,6 @@ const SuitCharts = {
                     <option value="lvc">Last Visual Change</option>
                 </select>
             </div>
-            <SuitTestDropdown
-                v-if="allTests.length > 0"
-                @select-items="selectTest"
-                :is-all-checked="true"
-                :items-list="allTests">
-            </SuitTestDropdown>
-            {{ formattedTests.ui[1] }}
         </div>
         <div class="d-flex mt-3">
             <div class="chart flex-grow-1" style="position: relative">
@@ -322,7 +296,21 @@ const SuitCharts = {
                 <canvas id="linechart"></canvas>
             </div>
             <div class="card" style="width:280px; height: 500px; margin-left: 28px">
-            <hr class="my-0">
+                <div class="d-flex flex-column p-3">
+                    <label
+                        class="mb-0 w-100 d-flex align-items-center custom-checkbox custom-checkbox__multicolor"
+                        :class="{ 'custom-checkbox__minus': isAllSelected }"
+                        for="all_checkbox">
+                        <input
+                            class="mx-2 custom__checkbox"
+                            :checked="isAllSelectCbxFilled" id="all_checkbox"
+                            style="--cbx-color: var(--basic);"
+                            @change="selectAll"
+                            type="checkbox">
+                        <span class="w-100 d-inline-block">Select/Unselect all</span>
+                    </label>
+                </div>
+                <hr class="my-0">
                 <div id="linechart-group-legend"
                      class="custom-chart-legend d-flex flex-column px-3 py-3"
                      style="height: 400px; overflow: scroll;"

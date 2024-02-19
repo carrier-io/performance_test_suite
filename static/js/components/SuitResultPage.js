@@ -2,6 +2,7 @@ const SuitResults = {
     props: ['instance_name', 'result'],
     components: {
         SuitCharts: SuitCharts,
+        SuitMiniCharts: SuitMiniCharts,
     },
     data() {
         return {
@@ -14,6 +15,7 @@ const SuitResults = {
     },
     methods: {
         createTestsTable() {
+            console.log(this.result)
             const tableData = [
                 ...this.result.tests.backend.map(row => ({ ...row, test_type: 'backend'})),
                 ...this.result.tests.ui.map(row => ({ ...row, test_type: 'ui'}))];
@@ -22,11 +24,6 @@ const SuitResults = {
     },
     template: `
         <div class="p-3">
-            <div class="card p-28 mb-3">
-                <SuitCharts>
-                
-                </SuitCharts>
-            </div>
             <div class="card">
                 <div class="p-28 pb-20">
                     <div class="d-flex justify-content-between">
@@ -73,6 +70,18 @@ const SuitResults = {
                         <th scope="col" data-sortable="true" data-field="pct95">PCT95, MS</th>
                     </template>
                 </Table-Card>
+            </div>
+            <div class="card p-28 mb-3">
+                <SuitMiniCharts
+                    :tests="[]"
+                    :selected_aggregation_backend="'pct95'"
+                    :selected_aggregation_ui="'mean'"
+                    :selected_metric_ui="'total'"
+                ></SuitMiniCharts>
+            </div>
+            <div class="card p-28 mb-3">
+                <SuitCharts>
+                </SuitCharts>
             </div>
         </div>
     `

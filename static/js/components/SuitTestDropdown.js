@@ -89,24 +89,16 @@ const SuitTestDropdown = {
         }
     },
     template: `
-        <div id="complexList" class="complex-list">
-            <button class="btn btn-select bootstrap-select__sm dropdown-toggle px-2.5 text-left w-100" type="button"
-                style="height: 32px"
+        <div id="complexList" class="complex-list mr-2">
+            <button class="btn btn-select bootstrap-select__sm dropdown-toggle position-relative text-left d-flex align-items-center" type="button"
+                style="height: 32px; min-width: 200px"
                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="dropdown-toggle_label font-weight-600 font-h6">TESTS</span>
                 <span class="d-inline-block"
                     :class="classTitle"
                     style="width: calc(100% - 26px);">{{ computedTitle }}</span>
             </button>
             <div class="dropdown-menu close-outside">
-                <div class="px-3 pb-2 search-group">
-                    <div class="custom-input custom-input_search__sm position-relative">
-                        <input
-                            type="text"
-                            placeholder="Search"
-                            @input="searchItem">
-                        <img src="/design-system/static/assets/ico/search.svg" class="icon-search position-absolute">
-                    </div>
-                </div>
                 <div class="dropdown-item dropdown-menu_item d-flex align-items-center">
                    <label
                         class="mb-0 w-100 d-flex align-items-center custom-checkbox"

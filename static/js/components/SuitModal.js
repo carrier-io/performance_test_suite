@@ -115,7 +115,7 @@ const SuitModal = {
                                         <div class="custom-input w-100-imp">
                                             <p class="custom-input_desc font-semibold mb-1">Engine location</p>
                                             <select class="selectpicker bootstrap-select__b" data-style="btn"
-                                                v-model="rowData.location"
+                                                @change="event => changeLocationRegion(event)"
                                                 id="location_region_${rowData.uid}">
                                                 <template v-for="(locationGroup, region) in locations">
                                                     <optgroup 
@@ -252,13 +252,12 @@ const SuitModal = {
                                 })
                             },
                             changeLocationRegion(val) {
-                                console.log(val)
-                                // $('#allTests').bootstrapTable('updateCellByUniqueId', {
-                                //     id: this.rowData.uid,
-                                //     field: 'location',
-                                //     value: { ...this.rowData.location, location: val },
-                                //     reinit: false
-                                // })
+                                $('#allTests').bootstrapTable('updateCellByUniqueId', {
+                                    id: this.rowData.uid,
+                                    field: 'location',
+                                    value: val.target.value,
+                                    reinit: false
+                                })
                             },
                             changeLocationParam(val, type) {
                                 $('#allTests').bootstrapTable('updateCellByUniqueId', {

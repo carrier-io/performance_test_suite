@@ -115,7 +115,7 @@ def run_suite(event: dict, project_id, config_only: bool = False, execution: boo
     )
     suite_report.insert()
     event["suite_report_id"] = suite_report.id
-    resp = TaskManager(project_id).run_task([event], logger_stop_words=logger_stop_words)
+    resp = TaskManager(project_id).run_task([event], logger_stop_words=logger_stop_words, queue_name="__internal")
 
     return resp
 

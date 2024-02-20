@@ -1,5 +1,5 @@
 const Suits = {
-    props: ['instance_name'],
+    props: ['instance_name', 'locations'],
     components: {
         SuitSearch: SuitSearch,
         SuitModal: SuitModal,
@@ -245,7 +245,7 @@ const Suits = {
             </div>
             <Table-Card
                     @register="register"
-                    instance_name="table_results"
+                    instance_name="results_table"
                     header='Reports'
                     :adaptive-height="true"
                     :table_attributes="{
@@ -270,7 +270,8 @@ const Suits = {
                         data-formatter=SuiteTable.createLinkToTest>Name</th>
                     <th scope="col" data-sortable="true" data-field="start_time"
                         data-formatter="SuiteTable.date_formatter">Start</th>
-                    <th scope="col" data-sortable="true" data-field="duration">Duration</th>
+                    <th scope="col" data-sortable="true" data-field="duration"
+                        data-formatter="SuiteTable.duration_formatter">Duration</th>
                     <th scope="col" data-sortable="true" data-field="environment">Env</th>
                     <th scope="col" data-sortable="true" data-field="type">Test Type</th>
                     <th scope="col" data-sortable="true" data-field="tags">Tags</th>

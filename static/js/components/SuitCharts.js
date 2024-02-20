@@ -271,7 +271,7 @@ const SuitCharts = {
                 :is-all-checked="true"
                 :items-list="allTests">
             </SuitTestDropdown>
-            <div class="selectpicker-titled mr-3">
+            <div class="selectpicker-titled mr-2">
                 <span class="font-h6 font-semibold px-3 item__left">METRIC</span>
                 <select class="selectpicker" data-style="item__right" id="metric">
                     <option value="load_time">Load time</option>
@@ -283,6 +283,17 @@ const SuitCharts = {
                     <option value="tbt">Total Blocking Time</option>
                     <option value="fvc">First Visual Change</option>
                     <option value="lvc">Last Visual Change</option>
+                </select>
+            </div>
+            <div class="selectpicker-titled align-content-end" style="max-width: 220px">
+                <span class="font-h6 font-semibold px-3 item__left text-uppercase">Time aggr.</span>
+                <select class="selectpicker flex-grow-1" data-style="item__right">
+                    <option value="1s">1s</option>
+                    <option value="5s">5s</option>
+                    <option value="30s">30s</option>
+                    <option value="1m">1m</option>
+                    <option value="5m">5m</option>
+                    <option value="10m">10m</option>
                 </select>
             </div>
         </div>

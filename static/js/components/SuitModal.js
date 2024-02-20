@@ -112,12 +112,17 @@ const SuitModal = {
                                 </div>
                                 <div class="collapse" id="location_${rowData.uid}">
                                     <div class="d-flex pb-4">
-                                        <div class="custom-input w-100-imp displacement-ml-4">
+                                        <div class="custom-input w-100-imp">
                                             <p class="custom-input_desc font-semibold mb-1">Engine location</p>
-                                            <select class="selectpicker bootstrap-select__b" data-style="btn">                                    >
-                                                <optgroup label="Public pool">
-                                                    <option v-for="item in ['default']">{{ item }}</option>
-                                                </optgroup>
+                                            <select class="selectpicker bootstrap-select__b" data-style="btn"
+                                                v-model="rowData.location"
+                                                id="location_region_${rowData.uid}">
+                                                <template v-for="(locationGroup, region) in locations">
+                                                    <optgroup 
+                                                        :label="region" v-if="locationGroup.length > 0">
+                                                        <option v-for="loc in locationGroup">{{ loc }}</option>
+                                                    </optgroup>
+                                                </template>
                                             </select>
                                         </div>
                                         <div class="custom-input ml-3">
@@ -181,12 +186,19 @@ const SuitModal = {
                         data() {
                             return {
                                 rowData: rowData,
+                                locations: [],
                             };
                         },
                         components: {
                             'input-stepper': InputStepper,
                         },
                         mounted() {
+                            this.locations = window.suitLocations;
+                            this.$nextTick(() => {
+                                $(`#location_region_${this.rowData.uid}`).selectpicker('val', this.rowData.location);
+                                $(`#location_region_${this.rowData.uid}`).selectpicker('render').selectpicker('refresh');
+                                $(`#location_region_${this.rowData.uid}`).siblings('.dropdown-toggle').find('.filter-option-inner-inner').text(this.rowData.location)
+                            })
                             $(this.$refs[`test_params_${rowData.uid}`]).bootstrapTable({
                                 columns: [
                                     {
@@ -238,6 +250,15 @@ const SuitModal = {
                                         description: '',
                                     }
                                 })
+                            },
+                            changeLocationRegion(val) {
+                                console.log(val)
+                                // $('#allTests').bootstrapTable('updateCellByUniqueId', {
+                                //     id: this.rowData.uid,
+                                //     field: 'location',
+                                //     value: { ...this.rowData.location, location: val },
+                                //     reinit: false
+                                // })
                             },
                             changeLocationParam(val, type) {
                                 $('#allTests').bootstrapTable('updateCellByUniqueId', {

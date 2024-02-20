@@ -1,5 +1,5 @@
 const Suits = {
-    props: ['instance_name'],
+    props: ['instance_name', 'locations'],
     components: {
         SuitSearch: SuitSearch,
         SuitModal: SuitModal,

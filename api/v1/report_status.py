@@ -43,9 +43,7 @@ class API(Resource):
         if test_status["status"] == "Failed":
             report.end_time = report.start_time
         report.suite_status = test_status
-        if test_status["percentage"] == 100:
-            report.end_time = datetime.utcnow().isoformat("T") + "Z"
-            self.sio.emit('test_suite_finished', report.to_json())
+        report.end_time = datetime.utcnow().isoformat("T") + "Z"
         report.commit()
         self.sio.emit("test_suite_status_updated", {"status": test_status, 'report_id': report_id})
 

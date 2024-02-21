@@ -54,14 +54,16 @@ class API(Resource):
             _res = requests_summary(connector)
             _res["name"] = backend_report["name"]
             _res["type"] = "backend"
+            _res["report_id"] = backend_report["uid"]
             results.append(_res)
         for each in suite_report["tests"]["ui"]:
             _res = {}
-            name, linechart_data, barchart_data = self.get_ui_charts_data(project_id, each)
+            name, report_id, linechart_data, barchart_data = self.get_ui_charts_data(project_id, each)
             _res["linechart_data"] = linechart_data
             _res["barchart_data"] = barchart_data
             _res["name"] = name
             _res["type"] = "ui"
+            _res["report_id"] = report_id
             results.append(_res)
         return results
 
@@ -132,4 +134,4 @@ class API(Resource):
                         "lvc": each["lvc"]
                     }
 
-        return report.name, linechart_data, barchart_data
+        return report.name, report.uid, linechart_data, barchart_data

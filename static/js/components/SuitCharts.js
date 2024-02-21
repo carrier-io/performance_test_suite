@@ -118,6 +118,9 @@ const SuitCharts = {
                                     x: t.labels[i],
                                 }
                             }),
+                            borderWidth: 1,
+                            pointRadius: 1,
+                            pointHoverRadius: 1,
                             yAxisID: test.yAxisID,
                             tension: 0,
                             spanGaps: true,
@@ -132,6 +135,9 @@ const SuitCharts = {
                             backgroundColor: this.barColors[index],
                             borderColor: this.barColors[index],
                             label: `[${t.name}] ${page.name}`,
+                            borderWidth: 1,
+                            pointRadius: 1,
+                            pointHoverRadius: 1,
                         };
                         const data = page.datasets[this.metric].map((value, i) => {
                             return {
@@ -172,6 +178,9 @@ const SuitCharts = {
                 dottedData.push({
                     borderDash: [10,5],
                     data,
+                    borderWidth: 1,
+                    pointRadius: 1,
+                    pointHoverRadius: 1,
                     label: `[${uiTest.name}] loop ${i}`
                 })
             }

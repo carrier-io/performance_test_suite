@@ -17,7 +17,12 @@ var SuiteTable = {
         return new Date(value).toLocaleString()
     },
     duration_formatter(value, row, index) {
-        // console.log(row)
+        if (row.end_time && row.start_time) {
+            const date1 = new Date(row.start_time);
+            const date2 = new Date(row.end_time);
+            const differenceInMilliseconds = Math.abs(date1 - date2);
+            return (differenceInMilliseconds / 1000).toFixed(2);
+        }
     },
     createLinkToTest(value, row, index) {
         return `<a class="test form-control-label font-h5" target="_blank" href="./results?result_id=${row.id}" role="button">${row.name}</a>`
@@ -143,16 +148,16 @@ var SuiteTable = {
     },
 }
 
-var ParamsTable = {
+var TableFormatter = {
     inputFormatter(value, row, index, field, tableId) {
         return `<div class="custom-input w-100">
-                <input type="text" value="${value}" onchange="ParamsTable.updateCell(this, ${index}, '${field}', '${tableId}')" value="${value}">
+                <input type="text" value="${value}" onchange="TableFormatter.updateCell(this, ${index}, '${field}', '${tableId}')" value="${value}">
             </div>`
     },
     deleteRowFormatter: (value, row, index, tableId) => {
         return `
             <button class="btn btn-default btn-xs btn-table btn-icon__xs mr-2" style="width: 150px;"
-                onclick="ParamsTable.removeParamRow(this, '${index}', '${row.name}', '${tableId}')">
+                onclick="TableFormatter.removeParamRow(this, '${index}', '${row.name}', '${tableId}')">
                 <i class="icon__16x16 icon-delete"></i>
             </button>
         `
@@ -165,14 +170,14 @@ var ParamsTable = {
             field: '$index',
             values: [+index]
         })
-        ParamsTable.updateParentTable(tableId)
+        TableFormatter.updateParentTable(tableId)
     },
     updateCell: (el, row, field, tableId) => {
         $(el.closest('table')).bootstrapTable(
             'updateCell',
             {index: row, field: field, value: el.value}
         );
-        ParamsTable.updateParentTable(tableId)
+        TableFormatter.updateParentTable(tableId)
     },
     updateParentTable(tableId) {
         const testParams = $(`#test_params_${tableId}`).bootstrapTable('getData');

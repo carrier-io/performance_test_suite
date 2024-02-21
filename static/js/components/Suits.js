@@ -20,7 +20,7 @@ const Suits = {
             },
             showConfirm: false,
             preparedDeletingIds: [],
-            modalType: null,
+            modalType: 'create',
             deletingTitle: null,
             loadingDelete: false,
         }
@@ -137,7 +137,7 @@ const Suits = {
                         <template #actions="{master}">
                             <div class="d-flex justify-content-end">
                                 <button type="button" class="btn btn-basic btn-icon mr-2" data-toggle="modal"
-                                        @click="modalType = 'edit'"
+                                        @click="modalType = 'create'"
                                         data-target="#suiteModal">
                                     <i class="icon__18x18 icon-create-element icon__white"></i>
                                 </button>
@@ -271,7 +271,7 @@ const Suits = {
                     <th scope="col" data-sortable="true" data-field="start_time"
                         data-formatter="SuiteTable.date_formatter">Start</th>
                     <th scope="col" data-sortable="true" data-field="duration"
-                        data-formatter="SuiteTable.duration_formatter">Duration</th>
+                        data-formatter="SuiteTable.duration_formatter">Duration, sec</th>
                     <th scope="col" data-sortable="true" data-field="environment">Env</th>
                     <th scope="col" data-sortable="true" data-field="type">Test Type</th>
                     <th scope="col" data-sortable="true" data-field="tags">Tags</th>

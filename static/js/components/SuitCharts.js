@@ -28,27 +28,39 @@ const SuitCharts = {
                 '#2963f5',
             ],
             metric: 'load_time',
+            aggregationType: 'auto',
         }
     },
     mounted() {
+        this.fetchChartData()
         const vm = this;
         $('#metric').on("changed.bs.select", function() {
             vm.metric = this.value;
         });
-        const urlParams = new URLSearchParams(window.location.search);
-        const resultId = urlParams.get('result_id');
-        this.loading = true;
-        ApiChartData(resultId).then(data => {
-            this.loading = false;
-            this.tests = data;
-            this.generateDatasets(data);
-        })
     },
     watch: {
         metric(newValue, oldValue) {
             lineChart.destroy();
             lineChart = null;
-            this.generateDatasets(this.tests)
+            this.generateDatasets(this.selectedTests)
+        },
+        aggregationType(newValue) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const resultId = urlParams.get('result_id');
+            this.loading = true;
+            ApiChartData(resultId, newValue).then(data => {
+                this.loading = false;
+                this.tests = data;
+                const newSelectedTests = this.tests.filter(t => {
+                    if (this.selectedTests.map(oldT => oldT.report_id).includes(t.report_id)) {
+                        return t
+                    }
+                })
+                this.selectedTests = newSelectedTests;
+                lineChart.destroy();
+                lineChart = null;
+                this.generateDatasets(this.selectedTests);
+            })
         }
     },
     computed: {
@@ -65,11 +77,19 @@ const SuitCharts = {
         }
     },
     methods: {
+        fetchChartData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const resultId = urlParams.get('result_id');
+            this.loading = true;
+            ApiChartData(resultId, this.aggregationType).then(data => {
+                this.loading = false;
+                this.tests = data;
+                this.generateDatasets(data);
+            })
+        },
         selectTest(tests) {
             this.selectedTests = this.tests.filter(t => tests.includes(t.name));
-            // this.lineChart.destroy();
             lineChart.destroy();
-            // this.lineChart = null;
             lineChart = null;
             this.generateDatasets(this.selectedTests)
         },
@@ -289,7 +309,8 @@ const SuitCharts = {
             </div>
             <div class="selectpicker-titled align-content-end" style="max-width: 220px">
                 <span class="font-h6 font-semibold px-3 item__left text-uppercase">Time aggr.</span>
-                <select class="selectpicker flex-grow-1" data-style="item__right">
+                <select class="selectpicker flex-grow-1" data-style="item__right" v-model="aggregationType">
+                    <option value="auto" selected>auto</option>
                     <option value="1s">1s</option>
                     <option value="5s">5s</option>
                     <option value="30s">30s</option>

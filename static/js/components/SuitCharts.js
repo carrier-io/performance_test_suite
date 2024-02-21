@@ -99,6 +99,8 @@ const SuitCharts = {
                                 }
                             }),
                             yAxisID: test.yAxisID,
+                            tension: 0,
+                            spanGaps: true,
                         }
                     })
                     beData = [...beData, ...ds];

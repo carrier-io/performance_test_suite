@@ -61,10 +61,11 @@ const SuitResults = {
                         <th scope="col" data-checkbox="true"></th>
                         <th data-visible="false" data-field="id">index</th>
                         <th scope="col" data-sortable="true" data-field="name" data-formatter="SuiteTable.createLinkToOriginTest">Name</th>
+                        <th scope="col" data-sortable="true" data-field="test_config.location">Location</th>
                         <th scope="col" data-sortable="true" data-field="start_time" data-formatter="SuiteTable.date_formatter">START</th>
                         <th scope="col" data-sortable="true" data-field="test_type">GROUP</th>
                         <th scope="col" data-sortable="true" data-field="environment">ENV</th>
-                        <th scope="col" data-sortable="true" data-field="">ERROR RATE</th>
+                        <th scope="col" data-sortable="true" data-field="failure_rate">ERROR RATE</th>
                         <th scope="col" data-sortable="true" data-field="duration">DURATION</th>
                         <th scope="col" data-sortable="true" data-field="tags" data-formatter="ParamsTable.tagFormatter">TAG</th>
                     </template>

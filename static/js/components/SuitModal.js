@@ -204,24 +204,24 @@ const SuitModal = {
                                     {
                                         title: 'name',
                                         field: 'name',
-                                        formatter: (value, row, index, field) => ParamsTable.inputFormatter(value, row, index, field, `${rowData.uid}`),
+                                        formatter: (value, row, index, field) => TableFormatter.inputFormatter(value, row, index, field, `${rowData.uid}`),
                                         sortable: true,
                                     },
                                     {
                                         field: 'default',
                                         title: 'default Value',
-                                        formatter: (value, row, index, field) => ParamsTable.inputFormatter(value, row, index, field, `${rowData.uid}`),
+                                        formatter: (value, row, index, field) => TableFormatter.inputFormatter(value, row, index, field, `${rowData.uid}`),
                                         sortable: true,
                                     },
                                     {
                                         field: 'description',
                                         title: 'description',
-                                        formatter: (value, row, index, field) => ParamsTable.inputFormatter(value, row, index, field, `${rowData.uid}`),
+                                        formatter: (value, row, index, field) => TableFormatter.inputFormatter(value, row, index, field, `${rowData.uid}`),
                                         sortable: true,
                                     },
                                     {
                                         class: 'w-12',
-                                        formatter: (value, row, index) => ParamsTable.deleteRowFormatter(value, row, index, `${rowData.uid}`),
+                                        formatter: (value, row, index) => TableFormatter.deleteRowFormatter(value, row, index, `${rowData.uid}`),
                                     }
                                 ],
                                 data: rowData.test_parameters
@@ -357,7 +357,7 @@ const SuitModal = {
                     <div class="modal-header">
                         <div class="row w-100">
                             <div class="col">
-                                <h2>Create Suite</h2>
+                                <h2 class="text-capitalize">{{ modalType }} Suite</h2>
                             </div>
                             <div class="col-xs d-flex">
                                 <button type="button" 
@@ -470,10 +470,10 @@ const SuitModal = {
                                                 <th data-sortable="true" data-field="entrypoint">entrypoint</th>
                                                 <th data-sortable="true" 
                                                     data-field="job_type"
-                                                    data-formatter="ParamsTable.job_type">runner</th>
+                                                    data-formatter="TableFormatter.job_type">runner</th>
                                                 <th scope="col" data-align="right"
-                                                    data-formatter=ParamsTable.actions
-                                                    data-events="ParamsTable.action_events">Actions</th>      
+                                                    data-formatter=TableFormatter.actions
+                                                    data-events="TableFormatter.action_events">Actions</th>      
                                             </tr>
                                         </thead>
                                         <tbody>

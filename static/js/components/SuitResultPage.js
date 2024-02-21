@@ -15,7 +15,6 @@ const SuitResults = {
     },
     methods: {
         createTestsTable() {
-            console.log(this.result)
             const tableData = [
                 ...this.result.tests.backend.map(row => ({ ...row, test_type: 'backend'})),
                 ...this.result.tests.ui.map(row => ({ ...row, test_type: 'ui'}))];
@@ -62,12 +61,12 @@ const SuitResults = {
                         <th scope="col" data-checkbox="true"></th>
                         <th data-visible="false" data-field="id">index</th>
                         <th scope="col" data-sortable="true" data-field="name" data-formatter="SuiteTable.createLinkToOriginTest">Name</th>
-                        <th scope="col" data-sortable="true" data-field="total">TTL REQ, COUNT</th>
-                        <th scope="col" data-sortable="true" data-field="throughput">THRGHPT, REQ/SEC</th>
-                        <th scope="col" data-sortable="true" data-field="min">MIN, MS</th>
-                        <th scope="col" data-sortable="true" data-field="max">MAX, MS</th>
-                        <th scope="col" data-sortable="true" data-field="mean">MEDIAN, MS</th>
-                        <th scope="col" data-sortable="true" data-field="pct95">PCT95, MS</th>
+                        <th scope="col" data-sortable="true" data-field="start_time" data-formatter="SuiteTable.date_formatter">START</th>
+                        <th scope="col" data-sortable="true" data-field="test_type">GROUP</th>
+                        <th scope="col" data-sortable="true" data-field="environment">ENV</th>
+                        <th scope="col" data-sortable="true" data-field="">ERROR RATE</th>
+                        <th scope="col" data-sortable="true" data-field="duration">DURATION</th>
+                        <th scope="col" data-sortable="true" data-field="tags" data-formatter="ParamsTable.tagFormatter">TAG</th>
                     </template>
                 </Table-Card>
             </div>

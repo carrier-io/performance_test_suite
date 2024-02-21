@@ -19,7 +19,6 @@ const SuitResults = {
                 ...this.result.tests.backend.map(row => ({ ...row, test_type: 'backend'})),
                 ...this.result.tests.ui.map(row => ({ ...row, test_type: 'ui'}))];
             $('#tableTests').bootstrapTable('load', tableData);
-            console.log(tableData)
         },
     },
     template: `

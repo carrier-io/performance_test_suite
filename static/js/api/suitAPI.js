@@ -70,8 +70,8 @@ const ApiDeleteReport = async (ids) => {
     return res.json();
 }
 
-const ApiChartData = async (reportId) => {
-    const res = await fetch(`/api/v1/performance_test_suite/chart/${getSelectedProjectId()}/${reportId}`, {
+const ApiChartData = async (reportId, aggregationType = 'auto') => {
+    const res = await fetch(`/api/v1/performance_test_suite/chart/${getSelectedProjectId()}/${reportId}?aggregation=${aggregationType}`, {
         method: 'GET',
     })
     return res.json();

@@ -60,5 +60,7 @@ class API(Resource):
                 'integrations', {}).get('system', {}).get('s3_integration', {})
             _res = self.module.context.rpc_manager.call.get_ui_results(bucket=bucket, file_name=file_name,
                                              project_id=project_id, **s3_settings)
+            for item in _res:
+                item["simulation"] = report["name"]
             results["ui"].append(_res)
         return results

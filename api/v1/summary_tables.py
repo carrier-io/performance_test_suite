@@ -48,8 +48,8 @@ class API(Resource):
 
             connector = MinioConnector(**args)
             _res = connector.get_build_data()
-
-            results["backend"].append(_res)
+            if _res:
+                results["backend"].append(_res)
         for each in suite_report["tests"]["ui"]:
             from ....ui_performance.models.ui_report import UIReport
             report = UIReport.query.filter_by(project_id=project_id,
@@ -60,7 +60,8 @@ class API(Resource):
                 'integrations', {}).get('system', {}).get('s3_integration', {})
             _res = self.module.context.rpc_manager.call.get_ui_results(bucket=bucket, file_name=file_name,
                                              project_id=project_id, **s3_settings)
-            for item in _res:
-                item["simulation"] = report["name"]
-            results["ui"].append(_res)
+            if _res:
+                for item in _res:
+                    item["simulation"] = report["name"]
+                results["ui"].append(_res)
         return results

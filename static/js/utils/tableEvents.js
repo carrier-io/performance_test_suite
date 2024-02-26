@@ -3,6 +3,9 @@ var SuiteTable = {
         switch (value.status) {
             case 'Failed':
                 return `<div data-toggle="tooltip" data-placement="top" title="${value.description}" style="color: var(--red)"><i class="fas fa-exclamation-circle error"></i> ${value.status}</div>`
+            case
+            'error':
+                return `<div data-toggle="tooltip" data-placement="top" title="${value.description}" style="color: var(--red)"><i class="fas fa-exclamation-circle error"></i> ${value.status}</div>`
             case 'Finished':
                 return `<div data-toggle="tooltip" data-placement="top" title="${value.description}" style="color: var(--info)"><i class="fas fa-check-circle"></i> ${value.status}</div>`
             case 'In progress':
@@ -217,5 +220,16 @@ var TableFormatter = {
             html.push('<p><b>' + key + ':</b> ' + value + '</p>')
         })
         return html.join('')
+    },
+    summaryBeName(value, row, index) {
+        return `[${row.simulation}] ${row.request_name}`
+    },
+    summaryUiName(value, row, index) {
+        return `[${row.simulation}] ${row.identifier}`
+    },
+    linkToUiReport(value, row, index) {
+        return `<a target="_blank" href="${value}"><i
+                class="fas fa-link"></i>
+            </a>`
     }
 }

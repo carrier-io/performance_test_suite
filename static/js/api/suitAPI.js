@@ -76,3 +76,9 @@ const ApiChartData = async (reportId, aggregationType = 'auto') => {
     })
     return res.json();
 }
+const ApiSummaryData = async (reportId) => {
+    const res = await fetch(`/api/v1/performance_test_suite/summary_tables/${getSelectedProjectId()}/${reportId}`, {
+        method: 'GET',
+    })
+    return res.json();
+}

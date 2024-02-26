@@ -32,7 +32,7 @@ const SuitCharts = {
         }
     },
     mounted() {
-        this.fetchChartData()
+        this.fetchChartData();
         const vm = this;
         $('#metric').on("changed.bs.select", function() {
             vm.metric = this.value;
@@ -240,16 +240,10 @@ const SuitCharts = {
             });
         },
         selectLegend(legend) {
-            // let hidden = !this.lineChart.getDatasetMeta(legend.datasetIndex).hidden;
             let hidden = !lineChart.getDatasetMeta(legend.datasetIndex).hidden;
             this.selectedLegend = hidden
                 ? this.selectedLegend.filter(lg => lg !== legend.text)
                 : [...this.selectedLegend, legend.text];
-            // this.lineChart.data.datasets.forEach((ds, i) => {
-            //     if (this.lineChart.getDatasetMeta(legend.datasetIndex).label === ds.label) {
-            //         this.lineChart.getDatasetMeta(i).hidden = hidden;
-            //     }
-            // })
             lineChart.data.datasets.forEach((ds, i) => {
                 if (lineChart.getDatasetMeta(legend.datasetIndex).label === ds.label) {
                     lineChart.getDatasetMeta(i).hidden = hidden;
@@ -269,11 +263,6 @@ const SuitCharts = {
                 if (!ds.label.includes('loop')) return ds;
             }),
                 ...dottedDatasets];
-            // this.lineChart.data.datasets.forEach((ds, i) => {
-            //     if (i >= this.pagesCount) {
-            //         this.lineChart.getDatasetMeta(i).hidden = !this.isShowDottedLine;
-            //     }
-            // })
         },
         selectAll({ target }) {
             const hidden = !target.checked;
@@ -294,7 +283,6 @@ const SuitCharts = {
         }
     },
     template: `
-    
         <div class="d-flex align-items-center">
             <SuitTestDropdown
                 v-if="allTests.length > 0"
@@ -356,7 +344,7 @@ const SuitCharts = {
                 <hr class="my-0">
                 <div id="linechart-group-legend"
                      class="custom-chart-legend d-flex flex-column px-3 py-3"
-                     style="height: 400px; overflow: scroll;"
+                     style="height: 450px; overflow: scroll;"
                 >
                     <div v-for="(legend, index) in legendList" class="d-flex mb-3 float-left mr-3">
                         <label

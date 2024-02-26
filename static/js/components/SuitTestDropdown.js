@@ -47,14 +47,14 @@ const SuitTestDropdown = {
     },
     mounted() {
         if (this.isAllChecked) {
-            this.handlerSelectAll();
+            this.handlerSelectAll(true);
         }
         $(".dropdown-menu.close-outside").on("click", function (event) {
             event.stopPropagation();
         });
     },
     methods: {
-        handlerSelectAll() {
+        handlerSelectAll(isInit) {
             if (this.selectedItems.length !== this.foundedItems.length) {
                 this.selectedItems = [...this.foundedItems];
                 this.$refs[this.refDropdownId].forEach(el => {
@@ -66,6 +66,7 @@ const SuitTestDropdown = {
                     el.checked = false;
                 })
             }
+            if (isInit) return
             this.$emit('select-items', this.selectedItems);
         },
         setClickedItem(title, { target: { checked }}) {
@@ -105,7 +106,7 @@ const SuitTestDropdown = {
                         :class="{ 'custom-checkbox__minus': isAllSelected }">
                         <input
                             :ref="refSearchId"
-                            @click="handlerSelectAll"
+                            @click="() => handlerSelectAll(false)"
                             type="checkbox">
                         <span class="w-100 d-inline-block ml-3">All tests</span>
                    </label>

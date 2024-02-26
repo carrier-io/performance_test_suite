@@ -7,6 +7,7 @@ from pylon.core.tools import log
 from tools import auth
 from ....backend_performance.connectors.minio_connector import MinioConnector
 from ...models.reports import SuiteReport
+from tools import api_tools
 
 
 class API(Resource):
@@ -63,5 +64,7 @@ class API(Resource):
             if _res:
                 for item in _res:
                     item["simulation"] = report["name"]
+                    item[
+                        "report"] = f"{api_tools.build_api_url('artifacts', 'artifact', mode='default')}/{project_id}/reports/{item['file_name']}",
                 results["ui"].append(_res)
         return results

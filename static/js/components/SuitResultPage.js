@@ -15,9 +15,8 @@ const SuitResults = {
         const urlParams = new URLSearchParams(window.location.search);
         const resultId = urlParams.get('result_id');
         ApiSummaryData(resultId).then(data => {
-            console.log(data)
-            $('#tableSummaryUi').bootstrapTable('load', ...data.ui);
-            $('#tableSummaryBe').bootstrapTable('load', ...data.backend);
+            $('#tableSummaryUi').bootstrapTable('load', data.ui.flat());
+            $('#tableSummaryBe').bootstrapTable('load', data.backend.flat());
         })
         this.$nextTick(() => {
             const summaryTableBeId = '#collapse_summary_be';
@@ -117,46 +116,6 @@ const SuitResults = {
                 </SuitCharts>
             </div>
             <div class="mt-3 card p-3">
-                <div data-toggle="collapse" data-target="#collapse_summary_ui" role="button" aria-expanded="false" aria-controls="collapse_summary_ui">
-                    <div class="col">
-                        <p class="font-h5 font-bold text-uppercase">Summary [UI]
-                            <button type="button" class="btn btn-nooutline-secondary p-0 pb-1 ml-1" data-toggle="collapse" data-target="#collapse_summary_ui">
-                                <i class="icon__16x16 icon-arrow-up__16 rotate-90"></i>
-                            </button>
-                        </p>
-                    </div>
-                </div>
-                <div class="collapse" id="collapse_summary_ui">
-                    <div class="card-body pb-0 px-2">
-                        <table
-                            class="table table-border"
-                            id="tableSummaryUi"
-                            data-toggle="table"
-                            data-unique-id="id"
-                            data-page-list="[5, 10, 15, 20]"
-                            data-page-size="5"
-                            data-side-pagination="client"
-                            data-pagination-parts="['pageInfo', 'pageList', 'pageSize']"
-                            data-pagination="true">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th data-visible="false" data-field="id">index</th>
-                                    <th scope="col" data-sortable="true" data-field="name" data-formatter="TableFormatter.summaryUiName">Page name</th>
-                                    <th scope="col" data-sortable="true" data-field="identifier">Identifier</th>
-                                    <th scope="col" data-sortable="true" data-field="type">TYPE</th>
-                                    <th scope="col" data-sortable="true" data-field="loop">loop</th>
-                                    <th scope="col" data-sortable="true" data-field="load_time">load time</th>
-                                    <th scope="col" data-sortable="true" data-field="report" data-formatter="TableFormatter.linkToUiReport">report</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-3 card p-3">
                 <div data-toggle="collapse" data-target="#collapse_summary_be" role="button" aria-expanded="false" aria-controls="collapse_summary_be">
                     <div class="col">
                         <p class="font-h5 font-bold text-uppercase">Summary [BACKEND]
@@ -189,6 +148,45 @@ const SuitResults = {
                                     <th scope="col" data-sortable="true" data-field="mean">MEDIAN, MS</th>
                                     <th scope="col" data-sortable="true" data-field="max">MAX, MS</th>
                                     <th scope="col" data-sortable="true" data-field="pct95">PCT95, MS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 card p-3">
+                <div data-toggle="collapse" data-target="#collapse_summary_ui" role="button" aria-expanded="false" aria-controls="collapse_summary_ui">
+                    <div class="col">
+                        <p class="font-h5 font-bold text-uppercase">Summary [UI]
+                            <button type="button" class="btn btn-nooutline-secondary p-0 pb-1 ml-1" data-toggle="collapse" data-target="#collapse_summary_ui">
+                                <i class="icon__16x16 icon-arrow-up__16 rotate-90"></i>
+                            </button>
+                        </p>
+                    </div>
+                </div>
+                <div class="collapse" id="collapse_summary_ui">
+                    <div class="card-body pb-0 px-2">
+                        <table
+                            class="table table-border"
+                            id="tableSummaryUi"
+                            data-toggle="table"
+                            data-unique-id="id"
+                            data-page-list="[5, 10, 15, 20]"
+                            data-page-size="5"
+                            data-side-pagination="client"
+                            data-pagination-parts="['pageInfo', 'pageList', 'pageSize']"
+                            data-pagination="true">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th data-visible="false" data-field="id">index</th>
+                                    <th scope="col" data-sortable="true" data-field="name" data-formatter="TableFormatter.summaryUiName">Page name</th>
+                                    <th scope="col" data-sortable="true" data-field="identifier">Identifier</th>
+                                    <th scope="col" data-sortable="true" data-field="type">TYPE</th>
+                                    <th scope="col" data-sortable="true" data-field="loop">loop</th>
+                                    <th scope="col" data-sortable="true" data-field="load_time">load time</th>
+                                    <th scope="col" data-sortable="true" data-field="report" data-formatter="TableFormatter.linkToUiReport">report</th>
                                 </tr>
                             </thead>
                             <tbody>

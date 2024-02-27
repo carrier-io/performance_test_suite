@@ -82,3 +82,9 @@ const ApiSummaryData = async (reportId) => {
     })
     return res.json();
 }
+const ApiChartTimeData = async (reportId) => {
+    const res = await fetch(`/api/v1/performance_test_suite/summary_charts/${getSelectedProjectId()}/${reportId}`, {
+        method: 'GET',
+    })
+    return res.json();
+}

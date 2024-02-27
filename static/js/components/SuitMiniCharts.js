@@ -1,26 +1,32 @@
 const SuitMiniCharts = {
     props: ['tests'],
     components: {
-        SuitTestDropdown: SuitTestDropdown
+        SuitTestDropdown: SuitTestDropdown,
+        TextToggle: TextToggle,
     },
     data() {
         return {
             selectedTests: this.tests,
+            selectedTestsByTime: [],
             chartIds: ['throughputChart', 'errorRateChart', 'responseTimeChart', 'pageSpeedChart'],
-            metric: 'load_time',
+            metric: ['load_time', 'load_time'],
             valuesFullName: {
-                load_time: 'load_time',
-                tti: 'time_to_interactive',
-                fcp: 'first_contentful_paint',
-                dom: 'dom_content_loading', // dom
-                lcp: 'largest_contentful_paint',
-                cls: 'last_visual_change', // 'cls',
-                tbt: 'total_blocking_time',
-                fvc: 'first_visual_change',
-                lvc: 'last_visual_change',
+                load_time: ['load_time', 'load_time'],
+                tti: ['tti', 'time_to_interactive'],
+                fcp: ['fcp', 'first_contentful_paint'],
+                dom: ['dom', 'dom_content_loading'], // dom
+                lcp: ['lcp', 'largest_contentful_paint'],
+                cls: ['cls', 'last_visual_change'], // 'cls',
+                tbt: ['tbt', 'total_blocking_time'],
+                fvc: ['fvc', 'first_visual_change'],
+                lvc: ['lvc', 'last_visual_change'],
             },
             valuesName: ['load_time', 'tti', 'fcp', 'dom', 'lcp', 'cls', 'tbt', 'fvc', 'lvc'],
+            valuesTimeName: ['errors', 'response_time', 'throughput', 'ui'],
             metricBE: 'pct95',
+            axis_type: 'categorical',
+            chartTimeData: null,
+            loadingChartTime: true,
         }
     },
     mounted() {
@@ -34,14 +40,49 @@ const SuitMiniCharts = {
             window['responseTimeChart'] = null;
             vm.drawChart('backend','responseTimeChart', this.value, 'ms', `RESPONSE TIME - ${this.value}`);
         });
+        const urlParams = new URLSearchParams(window.location.search);
+        const resultId = urlParams.get('result_id');
+        ApiChartTimeData(resultId).then(data => {
+            this.loadingChartTime = false;
+            this.chartTimeData = data;
+            this.selectedTestsByTime = data;
+        })
         this.generateChartOptions()
     },
     watch: {
         metric(newValue, oldValue) {
-            window['pageSpeedChart'].destroy();
-            window['pageSpeedChart'] = null;
-            this.drawChart('ui', 'pageSpeedChart', newValue, 'ms', `PAGE SPEED`);
+            if (this.axis_type === 'time') {
+                window['pageSpeedChart'].destroy();
+                window['pageSpeedChart'] = null;
+                this.drawTimeChart('ui', 'pageSpeedChart', 'ui', 'ms', 'PAGE SPEED');
+            } else {
+                window['pageSpeedChart'].destroy();
+                window['pageSpeedChart'] = null;
+                this.drawChart('ui', 'pageSpeedChart', newValue[1], 'ms', `PAGE SPEED`);
+            }
         },
+        axis_type(newVal) {
+            this.$nextTick(() => {
+                $('#metricAggregation').selectpicker('refresh');
+            })
+            if (newVal === 'time') {
+                this.chartIds.forEach(id => {
+                    if (window[id]) {
+                        window[id].destroy();
+                        window[id] = null;
+                    }
+                })
+                this.generateChartTimeOptions();
+            } else {
+                this.chartIds.forEach(id => {
+                    if (window[id]) {
+                        window[id].destroy();
+                        window[id] = null;
+                    }
+                })
+                this.generateChartOptions();
+            }
+        }
     },
     computed: {
         allTests() {
@@ -60,6 +101,12 @@ const SuitMiniCharts = {
             this.drawChart('backend','responseTimeChart', 'pct95', 'ms', 'RESPONSE TIME - pct95');
             this.drawChart('ui', 'pageSpeedChart', 'load_time', 'ms', 'PAGE SPEED - load time');
         },
+        generateChartTimeOptions(data) {
+            this.drawTimeChart('backend', 'throughputChart', 'throughput', 'req/sec', 'AVG. THROUGHPUT');
+            this.drawTimeChart('backend', 'errorRateChart', 'errors', '%', 'ERROR RATE');
+            this.drawTimeChart('backend','responseTimeChart', 'response_time', 'ms', 'RESPONSE TIME');
+            this.drawTimeChart('ui', 'pageSpeedChart', 'ui', 'ms', 'PAGE SPEED');
+        },
         drawChart(testType, chartId, keyName, yAxisTitle, chartTitle) {
             if (testType === 'backend') {
                 const datasets = []
@@ -74,8 +121,8 @@ const SuitMiniCharts = {
                     borderColor: '#5933c6',
                     tension: 0.1,
                     backgroundColor: '#5933c6',
-                    borderWidth: 3,
-                    pointRadius: 2,
+                    borderWidth: 1,
+                    pointRadius: 1,
                     pointHoverRadius: 2,
                 })
                 window[chartId] = new Chart(chartId, {
@@ -131,8 +178,8 @@ const SuitMiniCharts = {
                         data: data,
                         borderColor: colors[index],
                         backgroundColor: colors[index],
-                        borderWidth: 3,
-                        pointRadius: 2,
+                        borderWidth: 1,
+                        pointRadius: 1,
                         pointHoverRadius: 2,
                         snapGaps: true,
                         fill: '+1',
@@ -181,16 +228,155 @@ const SuitMiniCharts = {
                 })
             }
         },
+        drawTimeChart(testType, chartId, keyName, yAxisTitle, chartTitle) {
+            if (testType === 'backend') {
+                const nds = []
+                this.selectedTestsByTime[keyName].forEach((test) => {
+                    const formattedDs = {
+                        backgroundColor: test.datasets[0].backgroundColor,
+                        borderColor: test.datasets[0].borderColor,
+                        borderWidth: test.datasets[0].borderWidth,
+                        fill: test.datasets[0].fill,
+                        label: test.datasets[0].label + ' ' + test.name,
+                        lineTension: test.datasets[0].lineTension,
+                        pointRadius: test.datasets[0].pointRadius,
+                        spanGaps: test.datasets[0].spanGaps,
+                        data: test.datasets[0].data.map((ds, index) => ({
+                            x: test.labels[index],
+                            y: ds,
+                        })) }
+                    nds.push(formattedDs);
+                })
+                window[chartId] = new Chart(chartId, {
+                    type: 'line',
+                    data: {
+                        datasets: nds
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                grid: {
+                                    display: false
+                                },
+                            },
+                            y: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: yAxisTitle,
+                                },
+                                grid: {
+                                    display: false
+                                },
+                                display: 'auto'
+                            },
+                        },
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            title: {
+                                display: true,
+                                align: 'start',
+                                fullSize: false,
+                                text: chartTitle,
+                            },
+                        },
+                    }
+                })
+            } else {
+                const dynamicColors = function() {
+                    const r = Math.floor(Math.random() * 255);
+                    const g = Math.floor(Math.random() * 255);
+                    const b = Math.floor(Math.random() * 255);
+                    return "rgb(" + r + "," + g + "," + b + ")";
+                };
+                const nds = []
+                this.selectedTestsByTime[keyName].forEach((test) => {
+                    const datasets = test.dataset.map(page => {
+                        return {
+                            label: `[${test.name}] ${page.name}`,
+                            backgroundColor: dynamicColors(),
+                            borderColor: dynamicColors(),
+                            borderWidth: 1,
+                            pointRadius: 1,
+                            data: page.datasets[this.metric[0]].map((ds, index) => ({
+                                x: page.labels[index],
+                                y: ds,
+                            }))
+                        }
+                    })
+                    nds.push(datasets)
+                })
+                window[chartId] = new Chart(chartId, {
+                    type: 'line',
+                    data: {
+                        datasets: nds[0]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                grid: {
+                                    display: false
+                                },
+                            },
+                            y: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: yAxisTitle,
+                                },
+                                grid: {
+                                    display: false
+                                },
+                                display: 'auto'
+                            },
+                        },
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            title: {
+                                display: true,
+                                align: 'start',
+                                fullSize: false,
+                                text: chartTitle,
+                            },
+                        },
+                    }
+                })
+            }
+        },
         selectTest(tests) {
             this.selectedTests = {
                 backend: this.tests.backend.filter(t => tests.includes(t.name)),
                 ui: this.tests.ui.filter(t => tests.includes(t.name)),
             }
-            this.chartIds.forEach(id => {
-                window[id].destroy();
-                window[id] = null;
-            })
-            this.generateChartOptions()
+            this.selectedTestsByTime = {
+                errors: this.chartTimeData.errors.filter(t => tests.includes(t.name)),
+                response_time: this.chartTimeData.response_time.filter(t => tests.includes(t.name)),
+                throughput: this.chartTimeData.throughput.filter(t => tests.includes(t.name)),
+                ui: this.chartTimeData.ui.filter(t => tests.includes(t.name)),
+            }
+            if (this.axis_type === 'time') {
+                this.chartIds.forEach(id => {
+                    if (window[id]) {
+                        window[id].destroy();
+                        window[id] = null;
+                    }
+                })
+                this.generateChartTimeOptions();
+            } else {
+                this.chartIds.forEach(id => {
+                    window[id].destroy();
+                    window[id] = null;
+                })
+                this.generateChartOptions();
+            }
         },
     },
     template: `
@@ -204,7 +390,8 @@ const SuitMiniCharts = {
         </SuitTestDropdown>
         <div class="selectpicker-titled mr-2">
             <span class="font-h6 font-semibold px-3 item__left">BACKEND AGGREGATION</span>
-            <select class="selectpicker" data-style="item__right" id="metricAggregation">
+            <select class="selectpicker" data-style="item__right" id="metricAggregation"
+                :disabled="axis_type !== 'categorical'">
                 <option value="min">min</option>
                 <option value="max">max</option>
                 <option value="mean">mean</option>
@@ -229,6 +416,13 @@ const SuitMiniCharts = {
                 <option value="lvc">Last Visual Change</option>
             </select>
         </div>
+        <TextToggle
+            :disabled_buttons="loadingChartTime"
+            style="margin-top: 1px;"
+            v-model="axis_type"
+            :labels='["categorical", "time"]'
+            radio_group_name="chart_group_axis_type"
+        ></TextToggle>
     </div>
         <div class="d-grid grid-column-4 my-3">
             <div class="chart-container">

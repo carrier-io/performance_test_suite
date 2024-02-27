@@ -65,7 +65,54 @@ class API(Resource):
             _res["type"] = "ui"
             _res["report_id"] = report_id
             results.append(_res)
+
+        results = self.add_converted_timestamps(results)
         return results
+
+    def add_converted_timestamps(self, results):
+        ui_first_timestamp = ""
+        for each in results:
+            if "labels" in each.keys():
+                #each["formatted_labels"] = self.format_labels(each["labels"], each["labels"][0])
+                each["labels"] = self.format_labels(each["labels"], each["labels"][0])
+            else:
+                for _item in each["linechart_data"]:
+                    if not ui_first_timestamp:
+                        ui_first_timestamp = _item["labels"][0]
+                    # _item["formatted_labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
+                    _item["labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
+
+        return results
+
+    def format_labels(self, labels, first_timestamp=None):
+        # Convert timestamps to datetime objects
+        first_timestamp = self.convert_to_datetime_object(first_timestamp)
+        datetime_timestamps = []
+        for label in labels:
+            dt = self.convert_to_datetime_object(label)
+            datetime_timestamps.append(dt)
+
+        # Calculate time difference relative to the first timestamp
+        time_diffs = [(timestamp - first_timestamp) for timestamp in datetime_timestamps]
+
+        # Format time differences in the desired format
+        formatted_times = []
+        for diff in time_diffs:
+            hours, remainder = divmod(diff.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            formatted_time = f"2024-01-01T{hours:02d}:{minutes:02d}:{seconds:02d}Z"
+            formatted_times.append(formatted_time)
+
+        return formatted_times
+
+    def convert_to_datetime_object(self, label):
+        try:
+            # Attempt to parse ISO format
+            dt = datetime.fromisoformat(label[:-1])
+        except ValueError:
+            # Handle non-ISO format
+            dt = datetime.strptime(label, "%Y-%m-%d %H:%M:%S")
+        return dt
 
     def get_ui_charts_data(self, project_id, report_id):
         from ....ui_performance.models.ui_report import UIReport

@@ -94,6 +94,10 @@ const SuitCharts = {
             this.generateDatasets(this.selectedTests)
         },
         convertDate(inputTime) {
+            if (inputTime.endsWith('Z')) {
+                // already in ISO format
+                return inputTime;
+            }
             const parts = inputTime.split(/[- :]/);
             const dateTime = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]));
             const isoDateTime = dateTime.toISOString().replace(/\.\d{3}Z$/, 'Z');

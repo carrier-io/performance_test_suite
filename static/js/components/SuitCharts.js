@@ -29,6 +29,7 @@ const SuitCharts = {
             ],
             metric: 'load_time',
             aggregationType: 'auto',
+            axisTimeType: 'offset'
         }
     },
     mounted() {
@@ -61,6 +62,12 @@ const SuitCharts = {
                 lineChart = null;
                 this.generateDatasets(this.selectedTests);
             })
+        },
+        axisTimeType() {
+            lineChart.destroy();
+            lineChart = null;
+            console.log(this.selectedTests)
+            this.generateDatasets(this.selectedTests);
         }
     },
     computed: {
@@ -84,6 +91,7 @@ const SuitCharts = {
             ApiChartData(resultId, this.aggregationType).then(data => {
                 this.loading = false;
                 this.tests = data;
+                this.selectedTests = data;
                 this.generateDatasets(data);
             })
         },
@@ -92,16 +100,6 @@ const SuitCharts = {
             lineChart.destroy();
             lineChart = null;
             this.generateDatasets(this.selectedTests)
-        },
-        convertDate(inputTime) {
-            if (inputTime.endsWith('Z')) {
-                // already in ISO format
-                return inputTime;
-            }
-            const parts = inputTime.split(/[- :]/);
-            const dateTime = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]));
-            const isoDateTime = dateTime.toISOString().replace(/\.\d{3}Z$/, 'Z');
-            return isoDateTime;
         },
         generateDatasets(tests) {
             let beData = [];
@@ -146,7 +144,7 @@ const SuitCharts = {
                         const data = page.datasets[this.metric].map((value, i) => {
                             return {
                                 y: value,
-                                x: this.convertDate(page.labels[i]),
+                                x: page.labels[i],
                             }
                         });
                         return {
@@ -173,7 +171,7 @@ const SuitCharts = {
                     if (!this.selectedLegend.includes(`[${uiTest.name}] ${page.name}`)) return
                     data.push({
                         y: page.datasets[this.metric][i],
-                        x: this.convertDate(page.labels[i]),
+                        x: page.labels[i],
                     })
                 })
                 data.sort((a, b) => {
@@ -211,6 +209,22 @@ const SuitCharts = {
                             type: 'time',
                             grid: {
                                 display: true,
+                            },
+                            time: {
+                                parser: (value) => {
+                                    if (this.axisTimeType === 'offset') {
+                                        const date = new Date(value)
+                                        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                                        return new Date(date.getTime() + userTimezoneOffset);
+                                    }
+                                    return new Date(value);
+                                },
+                                timezone: 'UTC',
+                                tooltipFormat: 'll HH:mm',
+                                unit: 'second',
+                                displayFormats: {
+                                    second: 'HH:mm:ss'
+                                }
                             }
                         },
                         response_time: {
@@ -308,7 +322,7 @@ const SuitCharts = {
                     <option value="lvc">Last Visual Change</option>
                 </select>
             </div>
-            <div class="selectpicker-titled align-content-end" style="max-width: 220px">
+            <div class="selectpicker-titled align-content-end mr-2" style="max-width: 220px">
                 <span class="font-h6 font-semibold px-3 item__left text-uppercase">Time aggr.</span>
                 <select class="selectpicker flex-grow-1" data-style="item__right" v-model="aggregationType">
                     <option value="auto" selected>auto</option>
@@ -320,6 +334,12 @@ const SuitCharts = {
                     <option value="10m">10m</option>
                 </select>
             </div>
+            <TextToggle
+                style="margin-top: 1px;"
+                v-model="axisTimeType"
+                :labels='["offset", "utc"]'
+                radio_group_name="chart_group_axis_type"
+            ></TextToggle>
         </div>
         <div class="d-flex mt-3">
             <div class="chart flex-grow-1" style="position: relative">

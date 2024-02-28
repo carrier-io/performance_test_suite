@@ -73,14 +73,14 @@ class API(Resource):
         ui_first_timestamp = ""
         for each in results:
             if "labels" in each.keys():
-                #each["formatted_labels"] = self.format_labels(each["labels"], each["labels"][0])
-                each["labels"] = self.format_labels(each["labels"], each["labels"][0])
+                each["formatted_labels"] = self.format_labels(each["labels"], each["labels"][0])
+                #each["labels"] = self.format_labels(each["labels"], each["labels"][0])
             else:
                 for _item in each["linechart_data"]:
                     if not ui_first_timestamp:
                         ui_first_timestamp = _item["labels"][0]
-                    # _item["formatted_labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
-                    _item["labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
+                     _item["formatted_labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
+                    #_item["labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
 
         return results
 

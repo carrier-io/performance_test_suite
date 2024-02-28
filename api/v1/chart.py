@@ -79,7 +79,7 @@ class API(Resource):
                 for _item in each["linechart_data"]:
                     if not ui_first_timestamp:
                         ui_first_timestamp = _item["labels"][0]
-                     _item["formatted_labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
+                    _item["formatted_labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
                     #_item["labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
 
         return results

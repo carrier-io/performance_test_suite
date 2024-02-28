@@ -29,7 +29,7 @@ const SuitCharts = {
             ],
             metric: 'load_time',
             aggregationType: 'auto',
-            axisTimeType: 'offset'
+            axisTimeType: 'absolute'
         }
     },
     mounted() {
@@ -66,7 +66,6 @@ const SuitCharts = {
         axisTimeType() {
             lineChart.destroy();
             lineChart = null;
-            console.log(this.selectedTests)
             this.generateDatasets(this.selectedTests);
         }
     },
@@ -117,7 +116,7 @@ const SuitCharts = {
                             data: test.data.map((res, i) => {
                                 return {
                                     y: res,
-                                    x: t.labels[i],
+                                    x: this.axisTimeType === 'absolute' ? t.labels[i] : t.formatted_labels[i],
                                 }
                             }),
                             borderWidth: 1,
@@ -142,9 +141,17 @@ const SuitCharts = {
                             pointHoverRadius: 1,
                         };
                         const data = page.datasets[this.metric].map((value, i) => {
+                            let convertedTimeStr
+                            if (this.axisTimeType === 'absolute') {
+                                let dateObj = this.axisTimeType === 'absolute' ? new Date(page.labels[i]) : new Date(page.formatted_labels[i]);
+                                dateObj.setUTCHours(dateObj.getHours(), dateObj.getMinutes(), dateObj.getSeconds());
+                                convertedTimeStr = dateObj.toISOString();
+                            } else {
+                                convertedTimeStr = page.formatted_labels[i];
+                            }
                             return {
                                 y: value,
-                                x: page.labels[i],
+                                x: convertedTimeStr,
                             }
                         });
                         return {
@@ -169,9 +176,19 @@ const SuitCharts = {
                 const data = [];
                 uiTest['linechart_data'].forEach((page) => {
                     if (!this.selectedLegend.includes(`[${uiTest.name}] ${page.name}`)) return
+
+                    let convertedTimeStr
+                    if (this.axisTimeType === 'absolute') {
+                        let dateObj = this.axisTimeType === 'absolute' ? new Date(page.labels[i]) : new Date(page.formatted_labels[i]);
+                        dateObj.setUTCHours(dateObj.getHours(), dateObj.getMinutes(), dateObj.getSeconds());
+                        convertedTimeStr = dateObj.toISOString();
+                    } else {
+                        convertedTimeStr = page.formatted_labels[i];
+                    }
+
                     data.push({
                         y: page.datasets[this.metric][i],
-                        x: page.labels[i],
+                        x: convertedTimeStr,
                     })
                 })
                 data.sort((a, b) => {
@@ -212,7 +229,7 @@ const SuitCharts = {
                             },
                             time: {
                                 parser: (value) => {
-                                    if (this.axisTimeType === 'offset') {
+                                    if (this.axisTimeType === 'utc') {
                                         const date = new Date(value)
                                         const userTimezoneOffset = date.getTimezoneOffset() * 60000;
                                         return new Date(date.getTime() + userTimezoneOffset);
@@ -297,7 +314,7 @@ const SuitCharts = {
             if (!hidden) {
                 this.combineDatasets();
             }
-            lineChart.update()
+            lineChart.update();
         }
     },
     template: `
@@ -337,7 +354,7 @@ const SuitCharts = {
             <TextToggle
                 style="margin-top: 1px;"
                 v-model="axisTimeType"
-                :labels='["offset", "utc"]'
+                :labels='["absolute", "utc"]'
                 radio_group_name="chart_group_axis_type"
             ></TextToggle>
         </div>

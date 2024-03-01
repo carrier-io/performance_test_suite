@@ -6,7 +6,6 @@ const SuitCharts = {
     data() {
         lineChart: null
         return {
-            initialData: null,
             legendList: [],
             selectedLegend: [],
             loading: false,
@@ -43,7 +42,8 @@ const SuitCharts = {
         metric(newValue, oldValue) {
             lineChart.destroy();
             lineChart = null;
-            this.generateDatasets(this.selectedTests)
+            this.generateDatasets(this.selectedTests);
+            this.turnOnAllCbxOfLegends();
         },
         aggregationType(newValue) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -61,13 +61,23 @@ const SuitCharts = {
                 lineChart.destroy();
                 lineChart = null;
                 this.generateDatasets(this.selectedTests);
+                this.turnOnAllCbxOfLegends();
             })
         },
         axisTimeType() {
             lineChart.destroy();
             lineChart = null;
             this.generateDatasets(this.selectedTests);
-        }
+            this.turnOnAllCbxOfLegends();
+        },
+        legendList(newVal, oldVal) {
+            if (!oldVal.length) {
+                this.$emit('init-legends', newVal);
+            }
+        },
+        selectedLegend(newVal) {
+            this.$emit('select-legend', newVal);
+        },
     },
     computed: {
         allTests() {
@@ -88,19 +98,26 @@ const SuitCharts = {
             const resultId = urlParams.get('result_id');
             this.loading = true;
             ApiChartData(resultId, this.aggregationType).then(data => {
-                this.loading = false;
                 this.tests = data;
                 this.selectedTests = data;
                 this.generateDatasets(data);
+                this.loading = false;
+                this.$emit('is-chart-data-loaded', true)
+            })
+        },
+        turnOnAllCbxOfLegends() {
+            this.$refs['legendCbx'].forEach(cbx => {
+                cbx.checked = true;
             })
         },
         selectTest(tests) {
             this.selectedTests = this.tests.filter(t => tests.includes(t.name));
             lineChart.destroy();
             lineChart = null;
-            this.generateDatasets(this.selectedTests)
+            this.generateDatasets(this.selectedTests, true);
+            this.turnOnAllCbxOfLegends();
         },
-        generateDatasets(tests) {
+        generateDatasets(tests, isTestsChanged) {
             let beData = [];
             let uiData = [];
             const dottedDatasets = [];
@@ -166,7 +183,7 @@ const SuitCharts = {
             const preparedData = {
                 datasets: [ ...beData, ...uiData, ...dottedDatasets],
             };
-            this.drawCanvas(preparedData);
+            this.drawCanvas(preparedData, isTestsChanged);
         },
         generateDottedDatasets(uiTest) {
             const countIndex = uiTest['linechart_data'][0].labels.length;
@@ -205,7 +222,7 @@ const SuitCharts = {
             }
             return dottedData;
         },
-        drawCanvas(datasets) {
+        drawCanvas(datasets, isTestsChanged = false) {
             const ctx = document.getElementById("linechart");
             const chart = new Chart(ctx, {
                 type: 'line',
@@ -270,9 +287,12 @@ const SuitCharts = {
                 },
             });
             lineChart = chart;
-            this.legendList = chart.options.plugins.legend.labels.generateLabels(chart).filter(l => {
-                if (!l.text.includes('loop')) return l
+            this.legendList = chart.options.plugins.legend.labels.generateLabels(chart).filter(legend => {
+                if (!legend.text.includes('loop')) return legend
             });
+            if (isTestsChanged) {
+                this.$emit('select-legend', this.legendList);
+            }
         },
         selectLegend(legend) {
             let hidden = !lineChart.getDatasetMeta(legend.datasetIndex).hidden;

@@ -6,28 +6,66 @@ const SuitResults = {
     },
     data() {
         return {
+            chartDataLoaded: false,
+            initialLegends: [], // +
+            initUiLegends: [], // +
+            initBeLegends: [], // +
+            selectedUiTests: [], // +
+            selectedBeTests: [], // +
+            summaryAllTests: {
+                backend: [],
+                ui: [],
+            }, // +
         }
     },
-    mounted() {
-        setTimeout(() => {
-            this.createTestsTable()
-        }, 500);
-        const urlParams = new URLSearchParams(window.location.search);
-        const resultId = urlParams.get('result_id');
-        ApiSummaryData(resultId).then(data => {
-            $('#tableSummaryUi').bootstrapTable('load', data.ui.flat());
-            $('#tableSummaryBe').bootstrapTable('load', data.backend.flat());
-        })
-        this.$nextTick(() => {
-            const summaryTableBeId = '#collapse_summary_be';
-            const summaryTableUiId = '#collapse_summary_ui';
-            this.addRotateEvents(summaryTableBeId, 'show.bs.collapse', 'addClass');
-            this.addRotateEvents(summaryTableBeId, 'hide.bs.collapse', 'removeClass');
-            this.addRotateEvents(summaryTableUiId, 'show.bs.collapse', 'addClass')
-            this.addRotateEvents(summaryTableUiId, 'hide.bs.collapse', 'removeClass');
-        })
+    watch: {
+        // chartDataLoaded(newVal, oldVal) {
+        //     if (newVal) {
+        //         this.$nextTick(() => {
+        //             this.mountComponent();
+        //         })
+        //     }
+        // },
     },
     methods: {
+        mountComponent() {
+            setTimeout(() => {
+                this.createTestsTable()
+            }, 500);
+            const urlParams = new URLSearchParams(window.location.search);
+            const resultId = urlParams.get('result_id');
+            ApiSummaryData(resultId).then(data => {
+                this.summaryAllTests = data;
+                this.initialLegends.forEach(legend => {
+                    this.summaryAllTests.ui.forEach(uiT => {
+                        uiT.forEach(ds => {
+                            if (`[${ds.simulation}] ${ds.identifier}` === legend.text) {
+                                this.initUiLegends.push(legend.text);
+                            }
+                        })
+                    });
+                    this.summaryAllTests.backend.forEach(beT => {
+                        beT.forEach(ds => {
+                            if (`[${ds.simulation}] ${ds.request_name}` === legend.text) {
+                                this.initBeLegends.push(legend.text);
+                            }
+                        })
+                    })
+                });
+                this.selectedUiTests = this.summaryAllTests.ui.flat();
+                this.selectedBeTests = this.summaryAllTests.backend.flat();
+                $('#tableSummaryUi').bootstrapTable('load', this.selectedUiTests);
+                $('#tableSummaryBe').bootstrapTable('load', this.selectedBeTests);
+            })
+            this.$nextTick(() => {
+                const summaryTableBeId = '#collapse_summary_be';
+                const summaryTableUiId = '#collapse_summary_ui';
+                this.addRotateEvents(summaryTableBeId, 'show.bs.collapse', 'addClass');
+                this.addRotateEvents(summaryTableBeId, 'hide.bs.collapse', 'removeClass');
+                this.addRotateEvents(summaryTableUiId, 'show.bs.collapse', 'addClass')
+                this.addRotateEvents(summaryTableUiId, 'hide.bs.collapse', 'removeClass');
+            })
+        },
         addRotateEvents(elementId, eventName, methodName) {
             $(elementId).on(eventName, () => {
                 $(`[data-target='${elementId}'] i`)[methodName]('rotate-180')
@@ -38,6 +76,39 @@ const SuitResults = {
                 ...this.result.tests.backend.map(row => ({ ...row, test_type: 'backend'})),
                 ...this.result.tests.ui.map(row => ({ ...row, test_type: 'ui'}))];
             $('#tableTests').bootstrapTable('load', tableData);
+        },
+        selectLegend(legends) {
+            this.selectedUiTests = [];
+            this.selectedBeTests = [];
+            this.initUiLegends.forEach(legend => {
+                if (legends.includes(legend)) {
+                    this.summaryAllTests.ui.forEach(uiT => {
+                        const uiTest = uiT.find(ds => {
+                            return `[${ds.simulation}] ${ds.identifier}` === legend
+                        })
+                        this.selectedUiTests.push(uiTest)
+                    })
+                }
+            });
+
+            this.initBeLegends.forEach(legend => {
+                if (legends.includes(legend)) {
+                    this.summaryAllTests.backend.forEach(beT => {
+                        const beTest = beT.find(ds => {
+                            return `[${ds.simulation}] ${ds.request_name}` === legend
+                        })
+                        this.selectedBeTests.push(beTest)
+                    })
+                }
+            });
+            $('#tableSummaryUi').bootstrapTable('load', [...this.selectedUiTests]);
+            $('#tableSummaryBe').bootstrapTable('load', [...this.selectedBeTests]);
+        },
+        initLegends(legends) {
+            this.initialLegends = legends;
+            this.$nextTick(() => {
+                this.mountComponent();
+            })
         },
     },
     computed: {
@@ -112,7 +183,10 @@ const SuitResults = {
                 :tests="result.tests">
             </SuitMiniCharts>
             <div class="card p-28 mb-3">
-                <SuitCharts>
+                <SuitCharts
+                    @is-chart-data-loaded="chartDataLoaded = true"
+                    @init-legends="initLegends"
+                    @select-legend="selectLegend">
                 </SuitCharts>
             </div>
             <div class="mt-3 card p-3">

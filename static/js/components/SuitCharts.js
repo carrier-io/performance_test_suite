@@ -102,7 +102,6 @@ const SuitCharts = {
                 this.selectedTests = data;
                 this.generateDatasets(data);
                 this.loading = false;
-                this.$emit('is-chart-data-loaded', true)
             })
         },
         turnOnAllCbxOfLegends() {

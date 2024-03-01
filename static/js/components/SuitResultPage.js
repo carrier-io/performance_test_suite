@@ -7,25 +7,16 @@ const SuitResults = {
     data() {
         return {
             chartDataLoaded: false,
-            initialLegends: [], // +
-            initUiLegends: [], // +
-            initBeLegends: [], // +
-            selectedUiTests: [], // +
-            selectedBeTests: [], // +
+            initialLegends: [],
+            initUiLegends: [],
+            initBeLegends: [],
+            selectedUiTests: [],
+            selectedBeTests: [],
             summaryAllTests: {
                 backend: [],
                 ui: [],
-            }, // +
+            },
         }
-    },
-    watch: {
-        // chartDataLoaded(newVal, oldVal) {
-        //     if (newVal) {
-        //         this.$nextTick(() => {
-        //             this.mountComponent();
-        //         })
-        //     }
-        // },
     },
     methods: {
         mountComponent() {
@@ -184,7 +175,6 @@ const SuitResults = {
             </SuitMiniCharts>
             <div class="card p-28 mb-3">
                 <SuitCharts
-                    @is-chart-data-loaded="chartDataLoaded = true"
                     @init-legends="initLegends"
                     @select-legend="selectLegend">
                 </SuitCharts>

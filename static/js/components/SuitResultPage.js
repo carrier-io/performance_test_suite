@@ -77,18 +77,20 @@ const SuitResults = {
                         const uiTest = uiT.find(ds => {
                             return `[${ds.simulation}] ${ds.identifier}` === legend
                         })
-                        this.selectedUiTests.push(uiTest)
+                        if (uiTest) this.selectedUiTests.push(uiTest)
                     })
                 }
             });
 
             this.initBeLegends.forEach(legend => {
                 if (legends.includes(legend)) {
+                    // debugger
                     this.summaryAllTests.backend.forEach(beT => {
+                        // debugger
                         const beTest = beT.find(ds => {
                             return `[${ds.simulation}] ${ds.request_name}` === legend
                         })
-                        this.selectedBeTests.push(beTest)
+                        if (beTest) this.selectedBeTests.push(beTest)
                     })
                 }
             });

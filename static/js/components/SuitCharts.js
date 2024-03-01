@@ -28,7 +28,8 @@ const SuitCharts = {
             ],
             metric: 'load_time',
             aggregationType: 'auto',
-            axisTimeType: 'absolute'
+            axisTimeType: 'original',
+            isTestsFetched: false,
         }
     },
     mounted() {
@@ -71,11 +72,12 @@ const SuitCharts = {
             this.turnOnAllCbxOfLegends();
         },
         legendList(newVal, oldVal) {
-            if (!oldVal.length) {
+            if (!oldVal.length && !this.isTestsFetched) {
                 this.$emit('init-legends', newVal);
             }
+            this.isTestsFetched = true;
         },
-        selectedLegend(newVal) {
+        selectedLegend(newVal, oldVal) {
             this.$emit('select-legend', newVal);
         },
     },
@@ -132,7 +134,7 @@ const SuitCharts = {
                             data: test.data.map((res, i) => {
                                 return {
                                     y: res,
-                                    x: this.axisTimeType === 'absolute' ? t.labels[i] : t.formatted_labels[i],
+                                    x: this.axisTimeType === 'original' ? t.labels[i] : t.formatted_labels[i],
                                 }
                             }),
                             borderWidth: 1,
@@ -158,8 +160,8 @@ const SuitCharts = {
                         };
                         const data = page.datasets[this.metric].map((value, i) => {
                             let convertedTimeStr
-                            if (this.axisTimeType === 'absolute') {
-                                let dateObj = this.axisTimeType === 'absolute' ? new Date(page.labels[i]) : new Date(page.formatted_labels[i]);
+                            if (this.axisTimeType === 'original') {
+                                let dateObj = this.axisTimeType === 'original' ? new Date(page.labels[i]) : new Date(page.formatted_labels[i]);
                                 dateObj.setUTCHours(dateObj.getHours(), dateObj.getMinutes(), dateObj.getSeconds());
                                 convertedTimeStr = dateObj.toISOString();
                             } else {
@@ -194,8 +196,8 @@ const SuitCharts = {
                     if (!this.selectedLegend.includes(`[${uiTest.name}] ${page.name}`)) return
 
                     let convertedTimeStr
-                    if (this.axisTimeType === 'absolute') {
-                        let dateObj = this.axisTimeType === 'absolute' ? new Date(page.labels[i]) : new Date(page.formatted_labels[i]);
+                    if (this.axisTimeType === 'original') {
+                        let dateObj = this.axisTimeType === 'original' ? new Date(page.labels[i]) : new Date(page.formatted_labels[i]);
                         dateObj.setUTCHours(dateObj.getHours(), dateObj.getMinutes(), dateObj.getSeconds());
                         convertedTimeStr = dateObj.toISOString();
                     } else {
@@ -370,12 +372,15 @@ const SuitCharts = {
                     <option value="10m">10m</option>
                 </select>
             </div>
-            <TextToggle
-                style="margin-top: 1px;"
-                v-model="axisTimeType"
-                :labels='["absolute", "utc"]'
-                radio_group_name="chart_group_axis_type"
-            ></TextToggle>
+            <div class="d-flex align-items-center">
+                <p class="mr-2 font-h6">time line:</p>
+                <TextToggle
+                    style="margin-top: 1px;"
+                    v-model="axisTimeType"
+                    :labels='["original", "relative"]'
+                    radio_group_name="chart_group_axis_type"
+                ></TextToggle>
+            </div>
         </div>
         <div class="d-flex mt-3">
             <div class="chart flex-grow-1" style="position: relative">

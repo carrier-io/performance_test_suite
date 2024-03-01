@@ -244,17 +244,17 @@ const Suits = {
                 </div>
             </div>
             <Table-Card
-                    @register="register"
-                    instance_name="results_table"
-                    header='Reports'
-                    :adaptive-height="true"
-                    :table_attributes="{
-                        id: 'results_table',
-                        'data-side-pagination':'client',
-                        'data-unique-id':'id',
-                        'data-url':'/api/v1/performance_test_suite/reports/${getSelectedProjectId()}'
-                    }"
-                    container_classes="mt-3"
+                @register="register"
+                instance_name="results_table"
+                header='Reports'
+                :adaptive-height="true"
+                :table_attributes="{
+                    id: 'results_table',
+                    'data-side-pagination':'client',
+                    'data-unique-id':'id',
+                    'data-url':'/api/v1/performance_test_suite/reports/${getSelectedProjectId()}'
+                }"
+                container_classes="mt-3"
             >
                 <template #actions="{master}">
                     <div class="d-flex justify-content-end">

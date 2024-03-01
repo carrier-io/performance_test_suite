@@ -28,7 +28,8 @@ const SuitCharts = {
             ],
             metric: 'load_time',
             aggregationType: 'auto',
-            axisTimeType: 'absolute'
+            axisTimeType: 'absolute',
+            isTestsFetched: false,
         }
     },
     mounted() {
@@ -71,11 +72,12 @@ const SuitCharts = {
             this.turnOnAllCbxOfLegends();
         },
         legendList(newVal, oldVal) {
-            if (!oldVal.length) {
+            if (!oldVal.length && !this.isTestsFetched) {
                 this.$emit('init-legends', newVal);
             }
+            this.isTestsFetched = true;
         },
-        selectedLegend(newVal) {
+        selectedLegend(newVal, oldVal) {
             this.$emit('select-legend', newVal);
         },
     },

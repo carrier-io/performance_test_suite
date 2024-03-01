@@ -49,6 +49,9 @@ class API(Resource):
 
             connector = MinioConnector(**args)
             _res = connector.get_build_data()
+            for req in _res:
+                if req["request_name"] == "All":
+                    _res.remove(req)
             if _res:
                 results["backend"].append(_res)
         for each in suite_report["tests"]["ui"]:

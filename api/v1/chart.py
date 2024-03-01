@@ -72,19 +72,19 @@ class API(Resource):
     def add_converted_timestamps(self, results):
         ui_first_timestamp = ""
         for each in results:
-            if "labels" in each.keys():
+            if "labels" in each.keys() and len(each["labels"]) >= 1:
                 each["formatted_labels"] = self.format_labels(each["labels"], each["labels"][0])
-                #each["labels"] = self.format_labels(each["labels"], each["labels"][0])
             else:
                 for _item in each["linechart_data"]:
-                    if not ui_first_timestamp:
+                    if not ui_first_timestamp and len(_item["labels"]) >= 1:
                         ui_first_timestamp = _item["labels"][0]
                     _item["formatted_labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
-                    #_item["labels"] = self.format_labels(_item["labels"], ui_first_timestamp)
 
         return results
 
     def format_labels(self, labels, first_timestamp=None):
+        if not first_timestamp:
+            return []
         # Convert timestamps to datetime objects
         first_timestamp = self.convert_to_datetime_object(first_timestamp)
         datetime_timestamps = []

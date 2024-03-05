@@ -106,10 +106,7 @@ const SuitResults = {
     },
     computed: {
         dateFormatter() {
-            const date1 = new Date(this.result.start_time);
-            const date2 = new Date(this.result.end_time);
-            const differenceInMilliseconds = Math.abs(date1 - date2);
-            return (differenceInMilliseconds / 1000).toFixed(2);
+            return SuiteTable.duration_formatter(null, { start_time: this.result.start_time, end_time: this.result.end_time })
         }
     },
     template: `

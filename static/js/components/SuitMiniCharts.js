@@ -14,9 +14,9 @@ const SuitMiniCharts = {
                 load_time: ['load_time', 'load_time'],
                 tti: ['tti', 'time_to_interactive'],
                 fcp: ['fcp', 'first_contentful_paint'],
-                dom: ['dom', 'dom_content_loading'], // dom
+                dom: ['dom', 'dom_content_loading'],
                 lcp: ['lcp', 'largest_contentful_paint'],
-                cls: ['cls', 'last_visual_change'], // 'cls',
+                cls: ['cls', 'last_visual_change'],
                 tbt: ['tbt', 'total_blocking_time'],
                 fvc: ['fvc', 'first_visual_change'],
                 lvc: ['lvc', 'last_visual_change'],
@@ -27,11 +27,15 @@ const SuitMiniCharts = {
             axis_type: 'categorical',
             chartTimeData: null,
             loadingChartTime: true,
+            modalChartId: null,
         }
     },
     mounted() {
         const vm = this;
         $('#metricMini').on("changed.bs.select", function() {
+            vm.metric = vm.valuesFullName[this.value];
+        });
+        $('#metricBig').on("changed.bs.select", function() {
             vm.metric = vm.valuesFullName[this.value];
         });
         $('#metricAggregation').on("changed.bs.select", function() {
@@ -40,6 +44,16 @@ const SuitMiniCharts = {
             window['responseTimeChart'] = null;
             vm.drawChart('backend','responseTimeChart', this.value, 'ms', `RESPONSE TIME - ${this.value}`);
         });
+        $('#metricBigAggregation').on("changed.bs.select", function() {
+            vm.metricBE = this.value;
+            window['expanded_chart'].destroy();
+            window['expanded_chart'] = null;
+            vm.drawChart('backend','expanded_chart', this.value, 'ms', `RESPONSE TIME - ${this.value}`);
+        });
+        $('#modalChart').on('hidden.bs.modal', () => {
+            window['expanded_chart'].destroy();
+            window['expanded_chart'] = null;
+        })
         const urlParams = new URLSearchParams(window.location.search);
         const resultId = urlParams.get('result_id');
         ApiChartTimeData(resultId).then(data => {
@@ -47,17 +61,28 @@ const SuitMiniCharts = {
             this.chartTimeData = data;
             this.selectedTestsByTime = data;
         })
-        this.generateChartOptions()
+        this.generateChartOptions();
     },
     watch: {
         metric(newValue, oldValue) {
+            const isModalShow = $('#modalChart').is(':visible');
             if (this.axis_type === 'time') {
                 window['pageSpeedChart'].destroy();
                 window['pageSpeedChart'] = null;
+                if (isModalShow) {
+                    window['expanded_chart'].destroy();
+                    window['expanded_chart'] = null;
+                    this.generateBigChartByTime(this.modalChartId)
+                }
                 this.drawTimeChart('ui', 'pageSpeedChart', 'ui', 'ms', 'PAGE SPEED');
             } else {
                 window['pageSpeedChart'].destroy();
                 window['pageSpeedChart'] = null;
+                if (isModalShow) {
+                    window['expanded_chart'].destroy();
+                    window['expanded_chart'] = null;
+                    this.generateBigChart(this.modalChartId)
+                }
                 this.drawChart('ui', 'pageSpeedChart', newValue[1], 'ms', `PAGE SPEED`);
             }
         },
@@ -65,6 +90,10 @@ const SuitMiniCharts = {
             this.$nextTick(() => {
                 $('#metricAggregation').selectpicker('refresh');
             })
+            this.$nextTick(() => {
+                $('#metricBigAggregation').selectpicker('refresh');
+            })
+            const isModalShow = $('#modalChart').is(':visible');
             if (newVal === 'time') {
                 this.chartIds.forEach(id => {
                     if (window[id]) {
@@ -72,6 +101,11 @@ const SuitMiniCharts = {
                         window[id] = null;
                     }
                 })
+                if (isModalShow) {
+                    window['expanded_chart'].destroy();
+                    window['expanded_chart'] = null;
+                    this.generateBigChartByTime(this.modalChartId)
+                }
                 this.generateChartTimeOptions();
             } else {
                 this.chartIds.forEach(id => {
@@ -80,6 +114,11 @@ const SuitMiniCharts = {
                         window[id] = null;
                     }
                 })
+                if (isModalShow) {
+                    window['expanded_chart'].destroy();
+                    window['expanded_chart'] = null;
+                    this.generateBigChart(this.modalChartId)
+                }
                 this.generateChartOptions();
             }
         }
@@ -93,12 +132,19 @@ const SuitMiniCharts = {
                 return tests;
             } return []
         },
+        isDisabledAggregation() {
+            if (this.axis_type !== 'categorical') return true
+            if (this.modalChartId !== 'pct95') return true
+        },
+        isDisabledMetric() {
+            return this.modalChartId !== 'load_time'
+        }
     },
     methods: {
         generateChartOptions() {
             this.drawChart('backend', 'throughputChart', 'throughput', 'req/sec', 'AVG. THROUGHPUT');
             this.drawChart('backend', 'errorRateChart', 'failure_rate', '%', 'ERROR RATE');
-            this.drawChart('backend','responseTimeChart', 'pct95', 'ms', 'RESPONSE TIME - pct95');
+            this.drawChart('backend','responseTimeChart', 'pct95', 'ms', 'RESPONSE TIME - min');
             this.drawChart('ui', 'pageSpeedChart', 'load_time', 'ms', 'PAGE SPEED - load time');
         },
         generateChartTimeOptions(data) {
@@ -293,12 +339,11 @@ const SuitMiniCharts = {
                     const b = Math.floor(Math.random() * 255);
                     return "rgb(" + r + "," + g + "," + b + ")";
                 };
-                const nds = []
+                const nds = [];
                 this.selectedTestsByTime[keyName].forEach((test) => {
                     const datasets = test.dataset.map(page => {
                         return {
                             label: `[${test.name}] ${page.name}`,
-                            backgroundColor: dynamicColors(),
                             borderColor: dynamicColors(),
                             borderWidth: 1,
                             pointRadius: 1,
@@ -362,6 +407,7 @@ const SuitMiniCharts = {
                 throughput: this.chartTimeData.throughput.filter(t => tests.includes(t.name)),
                 ui: this.chartTimeData.ui.filter(t => tests.includes(t.name)),
             }
+            const isModalShow = $('#modalChart').is(':visible');
             if (this.axis_type === 'time') {
                 this.chartIds.forEach(id => {
                     if (window[id]) {
@@ -369,15 +415,70 @@ const SuitMiniCharts = {
                         window[id] = null;
                     }
                 })
+                if (isModalShow) {
+                    window['expanded_chart'].destroy();
+                    window['expanded_chart'] = null;
+                    this.generateBigChartByTime(this.modalChartId)
+                }
                 this.generateChartTimeOptions();
             } else {
                 this.chartIds.forEach(id => {
                     window[id].destroy();
                     window[id] = null;
                 })
+                if (isModalShow) {
+                    window['expanded_chart'].destroy();
+                    window['expanded_chart'] = null;
+                    this.generateBigChart(this.modalChartId)
+                }
                 this.generateChartOptions();
             }
         },
+        showChartModal(chartType) {
+            this.modalChartId = chartType;
+            $('#modalChart').modal('show');
+            this.$nextTick(() => {
+                $('#metricBigAggregation').selectpicker('refresh');
+                $('#metricBig').selectpicker('refresh');
+            })
+            if (this.axis_type === 'time') {
+                this.generateBigChartByTime(chartType);
+            } else {
+                this.generateBigChart(chartType);
+            }
+        },
+        generateBigChartByTime(chartType) {
+            switch (chartType) {
+                case 'throughput':
+                    this.drawTimeChart('backend', 'expanded_chart', 'throughput', 'req/sec', 'AVG. THROUGHPUT');
+                    break;
+                case 'failure_rate':
+                    this.drawTimeChart('backend', 'expanded_chart', 'errors', '%', 'ERROR RATE');
+                    break;
+                case 'pct95':
+                    this.drawTimeChart('backend','expanded_chart', 'response_time', 'ms', 'RESPONSE TIME');
+                    break;
+                case 'load_time':
+                    this.drawTimeChart('ui', 'expanded_chart', 'ui', 'ms', 'PAGE SPEED');
+                    break;
+            }
+        },
+        generateBigChart(chartType) {
+            switch (chartType) {
+                case 'throughput':
+                    this.drawChart('backend', 'expanded_chart', 'throughput', 'req/sec', 'AVG. THROUGHPUT');
+                    break;
+                case 'failure_rate':
+                    this.drawChart('backend', 'expanded_chart', 'failure_rate', '%', 'ERROR RATE');
+                    break;
+                case 'pct95':
+                    this.drawChart('backend','expanded_chart', 'pct95', 'ms', 'RESPONSE TIME - min');
+                    break;
+                case 'load_time':
+                    this.drawChart('ui', 'expanded_chart', 'load_time', 'ms', 'PAGE SPEED - load time');
+                    break;
+            }
+        }
     },
     template: `
     <div class="card p-28 mb-3">
@@ -417,7 +518,6 @@ const SuitMiniCharts = {
             </select>
         </div>
         <TextToggle
-            :disabled_buttons="loadingChartTime"
             style="margin-top: 1px;"
             v-model="axis_type"
             :labels='["categorical", "time"]'
@@ -426,16 +526,90 @@ const SuitMiniCharts = {
     </div>
         <div class="d-grid grid-column-4 my-3">
             <div class="chart-container">
+                <button type="button" class="btn btn-secondary btn-sm btn-icon__sm"
+                    @click="showChartModal('throughput')"
+                >
+                    <i class="fa fa-magnifying-glass-plus"></i>
+                </button>
                 <canvas id="throughputChart"></canvas>
             </div>
             <div class="chart-container">
-                <canvas id="errorRateChart"></canvas>
+               <button type="button" class="btn btn-secondary btn-sm btn-icon__sm"
+                    @click="showChartModal('failure_rate')"
+               >
+                   <i class="fa fa-magnifying-glass-plus"></i>
+               </button>
+               <canvas id="errorRateChart"></canvas>
             </div>
             <div class="chart-container">
-                <canvas id="responseTimeChart"></canvas>
+               <button type="button" class="btn btn-secondary btn-sm btn-icon__sm"
+                    @click="showChartModal('pct95')"
+               >
+                   <i class="fa fa-magnifying-glass-plus"></i>
+               </button>
+               <canvas id="responseTimeChart"></canvas>
             </div>
             <div class="chart-container">
-                <canvas id="pageSpeedChart"></canvas>
+               <button type="button" class="btn btn-secondary btn-sm btn-icon__sm"
+                    @click="showChartModal('load_time')"
+               >
+                   <i class="fa fa-magnifying-glass-plus"></i>
+               </button>
+               <canvas id="pageSpeedChart"></canvas>
+            </div>
+        </div>
+    </div>
+   
+    <div class="modal" tabindex="-1" id="modalChart">
+        <div class="modal-dialog modal-dialog-centered"
+             style="min-width: 1200px;"
+        >
+            <div class="modal-content p-0">
+                <div class="d-flex justify-content-between align-items-end px-28 pt-24 mb-3">
+                    <p class="font-h3 font-bold">Chart details</p>
+                    <i class="icon__18x18 icon_close-modal" data-dismiss="modal" aria-label="close"></i>
+                </div>
+                <div class="d-flex px-28">
+                    <div class="selectpicker-titled mr-2">
+                        <span class="font-h6 font-semibold px-3 item__left">BACKEND AGGREGATION</span>
+                        <select class="selectpicker" data-style="item__right" id="metricBigAggregation"
+                            :disabled="isDisabledAggregation">
+                            <option value="min">min</option>
+                            <option value="max">max</option>
+                            <option value="mean">mean</option>
+                            <option value="pct50">50 pct</option>
+                            <option value="pct75">75 pct</option>
+                            <option value="pct90">90 pct</option>
+                            <option value="pct95">95 pct</option>
+                            <option value="pct99">99 pct</option>
+                        </select>
+                    </div>
+                    <div class="selectpicker-titled mr-2">
+                        <span class="font-h6 font-semibold px-3 item__left">UI METRIC</span>
+                        <select class="selectpicker" data-style="item__right" 
+                            :disabled="isDisabledMetric"
+                            id="metricBig">
+                            <option value="load_time">Load time</option>
+                            <option value="dom">DOM Content Loading</option>
+                            <option value="tti">Time To Interactive</option>
+                            <option value="fcp">First Contentful Paint</option>
+                            <option value="lcp">Largest Contentful Paint</option>
+                            <option value="cls">Cumulative Layout Shift</option>
+                            <option value="tbt">Total Blocking Time</option>
+                            <option value="fvc">First Visual Change</option>
+                            <option value="lvc">Last Visual Change</option>
+                        </select>
+                    </div>
+                    <TextToggle
+                        style="margin-top: 1px;"
+                        v-model="axis_type"
+                        :labels='["categorical", "time"]'
+                        radio_group_name="big_chart_group_axis_type"
+                    ></TextToggle>
+                </div>
+                <div class="px-28 pb-28" style="min-height: 500px">
+                    <canvas id="expanded_chart" style="height: 100%"></canvas>
+                </div>
             </div>
         </div>
     </div>

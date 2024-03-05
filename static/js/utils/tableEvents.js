@@ -23,8 +23,14 @@ var SuiteTable = {
         if (row.end_time && row.start_time) {
             const date1 = new Date(row.start_time);
             const date2 = new Date(row.end_time);
-            const differenceInMilliseconds = Math.abs(date1 - date2);
-            return (differenceInMilliseconds / 1000).toFixed(2);
+            const differenceInSeconds = Math.abs(date1 - date2) / 1000;
+                if (differenceInSeconds < 60) {
+                    return differenceInSeconds.toFixed(0) + " sec";
+                } else if (differenceInSeconds < 3600) {
+                    return Math.round(differenceInSeconds / 60) + " min";
+                } else {
+                    return Math.round(differenceInSeconds / 3600) + " h";
+                }
         }
     },
     createLinkToTest(value, row, index) {
@@ -231,5 +237,5 @@ var TableFormatter = {
         return `<a target="_blank" href="${value}"><i
                 class="fas fa-link"></i>
             </a>`
-    }
+    },
 }

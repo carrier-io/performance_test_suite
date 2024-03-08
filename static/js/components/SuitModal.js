@@ -117,13 +117,27 @@ const SuitModal = {
                                             <select class="selectpicker bootstrap-select__b" data-style="btn"
                                                 @change="event => changeLocationRegion(event)"
                                                 id="location_region_${rowData.uid}">
-                                                <template v-for="(locationGroup, region) in locations">
-                                                    <optgroup 
-                                                        :label="region" v-if="locationGroup.length > 0">
-                                                        <option v-for="loc in locationGroup">{{ loc }}</option>
-                                                    </optgroup>
-                                                </template>
+                                                <optgroup label="Public pool" v-if="public_regions.length > 0">
+                                                    <option v-for="item in public_regions">{{ item }}</option>
+                                                </optgroup>
+                                                <optgroup label="Project pool" v-if="project_regions.length > 0">
+                                                    <option v-for="item in project_regions">{{ item }}</option>
+                                                </optgroup>
+                                                <optgroup label="Cloud pool" v-if="cloud_regions.length > 0">
+                                                    <option v-for="item in cloud_regions">{{ item.name }}</option>
+                                                </optgroup>
                                             </select>
+                                            <div v-show="showCloudDetails">
+                                                <p class="font-h5 font-semibold mt-2">Instance type</p>
+                                                <div class="custom-input w-100-imp">
+                                                    <select class="selectpicker bootstrap-select__b"
+                                                        @change="event => changeLocationParam(event, 'cloud_settings', 'instance_type')"
+                                                        id="instance_type_${rowData.uid}" data-style="btn">
+                                                        <option value="spot">Spot instance</option>
+                                                        <option value="on-demand">On-Demand instance</option>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="custom-input ml-3">
                                             <p class="custom-input_desc font-semibold mb-1">Runners</p>
@@ -186,18 +200,53 @@ const SuitModal = {
                         data() {
                             return {
                                 rowData: rowData,
-                                locations: [],
+                                public_regions: [],
+                                project_regions: [],
+                                cloud_regions: [],
+                                showCloudDetails: false,
+                                aws_regions: [
+                                    "eu-north-1",
+                                    "ap-south-1",
+                                    "eu-west-3",
+                                    "eu-west-2",
+                                    "eu-west-1",
+                                    "ap-northeast-3",
+                                    "ap-northeast-2",
+                                    "me-south-1",
+                                    "ap-northeast-1",
+                                    "sa-east-1",
+                                    "ca-central-1",
+                                    "ap-east-1",
+                                    "ap-southeast-1",
+                                    "ap-southeast-2",
+                                    "eu-central-1",
+                                    "us-east-1",
+                                    "us-east-2",
+                                    "us-west-1",
+                                    "us-west-2",
+                                ],
                             };
                         },
                         components: {
                             'input-stepper': InputStepper,
                         },
                         mounted() {
-                            this.locations = window.suitLocations;
+                            this.public_regions = window.suitLocations.public_regions;
+                            this.project_regions = window.suitLocations.project_regions;
+                            this.cloud_regions = window.suitLocations.cloud_regions;
                             this.$nextTick(() => {
                                 $(`#location_region_${this.rowData.uid}`).selectpicker('val', this.rowData.location);
                                 $(`#location_region_${this.rowData.uid}`).selectpicker('render').selectpicker('refresh');
-                                $(`#location_region_${this.rowData.uid}`).siblings('.dropdown-toggle').find('.filter-option-inner-inner').text(this.rowData.location)
+                                $(`#location_region_${this.rowData.uid}`).siblings('.dropdown-toggle').find('.filter-option-inner-inner').text(this.rowData.location);
+                                if (Object.values(this.rowData.env_vars.cloud_settings).length > 0) {
+                                    this.showCloudDetails = true;
+                                    // $(`#aws_region_${rowData.uid}`).selectpicker('val', this.rowData.env_vars.cloud_settings.region_name);
+                                    // $(`#aws_region_${rowData.uid}`).selectpicker('render').selectpicker('refresh');
+                                    $(`#instance_type_${rowData.uid}`).selectpicker('val', this.rowData.env_vars.cloud_settings.instance_type );
+                                    $(`#instance_type_${rowData.uid}`).selectpicker('render').selectpicker('refresh');
+                                    // this.changeLocationParam(this.rowData.env_vars.cloud_settings.region_name, 'cloud_settings', 'region_name');
+                                    if (this.rowData.env_vars.cloud_settings?.instance_type) this.changeLocationParam(this.rowData.env_vars.cloud_settings.instance_type, 'cloud_settings', 'instance_type');
+                                }
                             })
                             $(this.$refs[`test_params_${rowData.uid}`]).bootstrapTable({
                                 columns: [
@@ -252,6 +301,17 @@ const SuitModal = {
                                 })
                             },
                             changeLocationRegion(val) {
+                                this.showCloudDetails = val.target.value.includes('aws');
+                                if (this.showCloudDetails) {
+                                    this.$nextTick(() => {
+                                        $(`#instance_type_${rowData.uid}`).selectpicker('refresh');
+                                        const selectedInt = this.cloud_regions.find(int => int.name === val.target.value);
+                                        // $(`#aws_region_${rowData.uid}`).selectpicker('val', selectedInt.cloud_settings.region_name);
+                                        // $(`#aws_region_${rowData.uid}`).selectpicker('refresh');
+                                        // this.changeLocationParam(selectedInt.cloud_settings.region_name, 'cloud_settings', 'region_name');
+                                        this.changeLocationParam(selectedInt.cloud_settings.instance_type, 'cloud_settings', 'instance_type');
+                                    })
+                                }
                                 $('#allTests').bootstrapTable('updateCellByUniqueId', {
                                     id: this.rowData.uid,
                                     field: 'location',
@@ -259,14 +319,24 @@ const SuitModal = {
                                     reinit: false
                                 })
                             },
-                            changeLocationParam(val, type) {
+                            changeLocationParam(val, type, cloudField = null) {
+                                let newValue = { ...this.rowData.env_vars, [type]: val };
+                                if (type === 'cloud_settings' && !!val) {
+                                    const value = typeof val === 'string' ? val : val.target.value
+                                    newValue = { ...this.rowData.env_vars, cloud_settings: {
+                                            ...this.rowData.env_vars.cloud_settings,
+                                            [cloudField]: value
+                                        }
+                                    };
+                                }
+                                console.log(newValue)
                                 $('#allTests').bootstrapTable('updateCellByUniqueId', {
                                     id: this.rowData.uid,
                                     field: 'env_vars',
-                                    value: { ...this.rowData.env_vars, [type]: val },
+                                    value: newValue,
                                     reinit: false
                                 })
-                            }
+                            },
                         }
                     });
                     app.mount(container);
@@ -353,7 +423,7 @@ const SuitModal = {
     template: `
         <div class="modal fixed-left shadow-sm" tabindex="-1" role="dialog" id="suiteModal" data-keyboard="false" data-backdrop="static">
             <div class="modal-dialog modal-dialog-aside" role="document">
-                <div class="modal-content">
+                <div class="modal-content pb-0">
                     <div class="modal-header">
                         <div class="row w-100">
                             <div class="col">

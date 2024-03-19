@@ -212,13 +212,20 @@ var TableFormatter = {
                 <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs action_delete ml-2">
                     <i class="icon__18x18 icon-delete"></i>
                 </button>
+                <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs action_copy ml-2"
+                    data-toggle="modal" data-target="#copiedTest">
+                    <i class="icon__18x18 icon-copy"></i>
+                </button>
             </div>
         `
     },
     action_events: {
         'click .action_delete': function (e, value, row, index) {
             vueVm.registered_components['suit_modal'].removeRow(index, row)
-        }
+        },
+        'click .action_copy': function (e, value, row, index) {
+            vueVm.registered_components['suit_modal'].preparedCopiedTest = _.cloneDeep(row);
+        },
     },
     detailFormatter(index, row) {
         var html = []

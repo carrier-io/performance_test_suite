@@ -8,6 +8,9 @@ const SuitSearch = {
         },
         initSelectedItem: {
             default: [],
+        },
+        copiedTest: {
+            default: {},
         }
     },
     data() {
@@ -44,23 +47,29 @@ const SuitSearch = {
             this.$refs[this.refSearchId].checked = this.selectedItems.length === this.foundedItems.length;
         },
         initSelectedItem: {
-            handler: function (val) {
-                this.selectedItems = []
-                this.$refs[this.refDropdownId].forEach(el => {
-                    el.checked = false
-                    val.forEach(test => {
-                        // TODO
-                        if (el.id === test.uid || el.id === test.test_uid) {
-                            this.selectedItems.push(test)
-                            el.checked = true
-                        }
+            handler: function (val, oldVal) {
+                this.selectCheckBoxes();
+            },
+            deep: true
+        },
+        copiedTest: {
+            handler: function (val, oldVal) {
+                if (val.uid && val.uid !== oldVal.uid) {
+                    this.foundedItems.push(val);
+                    this.$nextTick(() => {
+                        this.selectCheckBoxes();
                     })
-                })
+                }
             },
             deep: true
         },
     },
     mounted() {
+        this.$nextTick(() => {
+            if (this.initSelectedItem.length > 0) {
+                this.selectCheckBoxes();
+            }
+        })
         if (this.isAllChecked) {
             this.handlerSelectAll();
         }
@@ -69,6 +78,19 @@ const SuitSearch = {
         });
     },
     methods: {
+        selectCheckBoxes() {
+            this.selectedItems = []
+            this.$refs[this.refDropdownId].forEach(el => {
+                el.checked = false
+                this.initSelectedItem.forEach(test => {
+                    // TODO
+                    if (el.id === test.uid || el.id === test.test_uid) {
+                        this.selectedItems.push(test)
+                        el.checked = true
+                    }
+                })
+            })
+        },
         handlerSelectAll() {
             if (this.selectedItems.length !== this.foundedItems.length) {
                 this.selectedItems = [...this.foundedItems];
@@ -87,7 +109,6 @@ const SuitSearch = {
             this.selectedItems = checked ?
                 [...this.selectedItems, title] :
                 this.selectedItems.filter(item => {
-                    console.log(item, title)
                     return item.uid !== title.uid
                 });
             this.$emit('select-items', this.selectedItems);
@@ -126,7 +147,7 @@ const SuitSearch = {
                     </div>
                 </div>
                 <div class="dropdown-item dropdown-menu_item d-flex align-items-center">
-                   <label
+                    <label
                         class="mb-0 w-100 d-flex align-items-center custom-checkbox"
                         :class="{ 'custom-checkbox__minus': isAllSelected }">
                         <input
@@ -134,12 +155,12 @@ const SuitSearch = {
                             @click="handlerSelectAll"
                             type="checkbox">
                         <span class="w-100 d-inline-block ml-3">All rows</span>
-                   </label>
+                    </label>
                 </div>
-                <ul class="my-0" style="overflow: scroll; max-height: 183px;">
+                <ul class="my-0" style="overflow: scroll; max-height: 183px;" v-if="foundedItems.length > 0">
                     <li class="dropdown-item dropdown-menu_item d-flex align-items-center"
                         v-for="item in foundedItems" :key="item">
-                         <label
+                        <label
                             class="mb-0 w-100 d-flex align-items-center custom-checkbox">
                             <input
                                 :ref="refDropdownId"

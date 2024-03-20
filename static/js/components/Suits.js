@@ -287,7 +287,7 @@ const Suits = {
             @clear-current-suit="clearCurrentSuit"
             :current-suit="currentSuit"
             :modal-type="modalType"
-            :all-test="allTest">
+            :performance-tests="allTest">
         </SuitModal>
         <Transition>
             <SuitConfirmModal

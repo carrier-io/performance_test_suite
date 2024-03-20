@@ -1,5 +1,5 @@
 const SuitModal = {
-    props: ['all-test', 'current-suit', 'modal-type'],
+    props: ['performance-tests', 'current-suit', 'modal-type'],
     components: {
         SuitSearch: SuitSearch,
     },
@@ -24,12 +24,25 @@ const SuitModal = {
             suitsLocationsList: [],
             listLoc: {},
             applyClicked: false,
+            applyClickedCopy: false,
             isValidFilter: false,
+            newTestName: '',
+            saveClicked: false,
+            showCreateModal: false,
+            copiedTest: {
+                uid: null
+            },
+            preparedCopiedTest: null,
+            performanceAndCopiedTests: [],
         }
     },
     mounted() {
+        $('#copiedTest').on('hide.bs.modal', (event) => {
+            this.newTestName = '';
+        })
         $('#suiteModal').on('shown.bs.modal', (event) => {
-            this.editableSuit = _.cloneDeep(this.currentSuit)
+            this.editableSuit = _.cloneDeep(this.currentSuit);
+            this.needUpdateSearch = false;
             if (this.currentSuit.uid) {
                 this.editableSuit.tests = this.editableSuit.tests.map(test => {
                         if (test.uid) {
@@ -45,8 +58,17 @@ const SuitModal = {
                     acc[elem] = (acc[elem] || 0) + 1;
                     return acc;
                 }, {})
+                const combinedTests = [ ...this.performanceTests, ...this.editableSuit.tests];
                 this.selectedTests = this.editableSuit.tests;
+                this.performanceAndCopiedTests = combinedTests.filter((test, index, self) =>
+                        index === self.findIndex((t) => (
+                            t.uid === test.uid
+                        ))
+                );
                 this.addTests();
+            } else {
+                this.selectedTests = [];
+                this.performanceAndCopiedTests = [...this.performanceTests]
             }
         })
     },
@@ -56,9 +78,18 @@ const SuitModal = {
                 this.isValidFilter = !!newVal.name && !!newVal.env && !!newVal.type && !!newVal.tests.length;
             },
             deep: true,
-        }
+        },
+    },
+    computed: {
     },
     methods: {
+        isNameYetExist(name) {
+            if (this.applyClickedCopy) {
+                if (name.length <= 3) return true
+                const nameExist = this.performanceAndCopiedTests.find(test => test.name === name);
+                return !!nameExist;
+            }
+        },
         hasError(value) {
             return value.length > 0;
         },
@@ -135,6 +166,14 @@ const SuitModal = {
                                                         id="instance_type_${rowData.uid}" data-style="btn">
                                                         <option value="spot">Spot instance</option>
                                                         <option value="on-demand">On-Demand instance</option>
+                                                    </select>
+                                                </div>
+                                                <p class="font-h5 font-semibold mt-2">AWS Region</p>
+                                                <div class="custom-input w-100-imp">
+                                                    <select class="selectpicker bootstrap-select__b"
+                                                        @change="event => changeLocationParam(event, 'cloud_settings', 'region_name')"
+                                                        id="aws_region_${rowData.uid}" data-style="btn">
+                                                        <option v-for="region in aws_regions" :value="region">{{ region }}</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -240,12 +279,16 @@ const SuitModal = {
                                 $(`#location_region_${this.rowData.uid}`).siblings('.dropdown-toggle').find('.filter-option-inner-inner').text(this.rowData.location);
                                 if (Object.values(this.rowData.env_vars.cloud_settings).length > 0) {
                                     this.showCloudDetails = true;
-                                    // $(`#aws_region_${rowData.uid}`).selectpicker('val', this.rowData.env_vars.cloud_settings.region_name);
-                                    // $(`#aws_region_${rowData.uid}`).selectpicker('render').selectpicker('refresh');
-                                    $(`#instance_type_${rowData.uid}`).selectpicker('val', this.rowData.env_vars.cloud_settings.instance_type );
-                                    $(`#instance_type_${rowData.uid}`).selectpicker('render').selectpicker('refresh');
-                                    // this.changeLocationParam(this.rowData.env_vars.cloud_settings.region_name, 'cloud_settings', 'region_name');
-                                    if (this.rowData.env_vars.cloud_settings?.instance_type) this.changeLocationParam(this.rowData.env_vars.cloud_settings.instance_type, 'cloud_settings', 'instance_type');
+                                    if (this.rowData.env_vars.cloud_settings?.instance_type) {
+                                        $(`#instance_type_${rowData.uid}`).selectpicker('val', this.rowData.env_vars.cloud_settings.instance_type );
+                                        $(`#instance_type_${rowData.uid}`).selectpicker('render').selectpicker('refresh');
+                                        this.changeLocationParam(this.rowData.env_vars.cloud_settings.instance_type, 'cloud_settings', 'instance_type');
+                                    }
+                                    if (this.rowData.env_vars.cloud_settings?.region_name) {
+                                        $(`#aws_region_${rowData.uid}`).selectpicker('val', this.rowData.env_vars.cloud_settings.region_name);
+                                        $(`#aws_region_${rowData.uid}`).selectpicker('render').selectpicker('refresh');
+                                        this.changeLocationParam(this.rowData.env_vars.cloud_settings.region_name, 'cloud_settings', 'region_name');
+                                    }
                                 }
                             })
                             $(this.$refs[`test_params_${rowData.uid}`]).bootstrapTable({
@@ -306,10 +349,8 @@ const SuitModal = {
                                     this.$nextTick(() => {
                                         $(`#instance_type_${rowData.uid}`).selectpicker('refresh');
                                         const selectedInt = this.cloud_regions.find(int => int.name === val.target.value);
-                                        // $(`#aws_region_${rowData.uid}`).selectpicker('val', selectedInt.cloud_settings.region_name);
-                                        // $(`#aws_region_${rowData.uid}`).selectpicker('refresh');
-                                        // this.changeLocationParam(selectedInt.cloud_settings.region_name, 'cloud_settings', 'region_name');
                                         this.changeLocationParam(selectedInt.cloud_settings.instance_type, 'cloud_settings', 'instance_type');
+                                        this.changeLocationParam(selectedInt.cloud_settings.region_name, 'cloud_settings', 'region_name');
                                     })
                                 }
                                 $('#allTests').bootstrapTable('updateCellByUniqueId', {
@@ -329,7 +370,6 @@ const SuitModal = {
                                         }
                                     };
                                 }
-                                console.log(newValue)
                                 $('#allTests').bootstrapTable('updateCellByUniqueId', {
                                     id: this.rowData.uid,
                                     field: 'env_vars',
@@ -354,6 +394,31 @@ const SuitModal = {
                 field: '$index',
                 values: [i]
             })
+        },
+        submitAddCopiedTest() {
+            this.applyClickedCopy = true;
+            const duplicatedNames = $('#allTests').bootstrapTable('getData').find(test => test.name === this.newTestName);
+            if (duplicatedNames || this.newTestName.length < 3) {
+                return;
+            }
+            this.preparedCopiedTest.test_parameters.forEach(param => {
+                if (param.name === 'test_name') {
+                    param.default = this.newTestName;
+                }
+            })
+            delete this.preparedCopiedTest.test_uid;
+            this.preparedCopiedTest.name = this.newTestName;
+            this.preparedCopiedTest.uid = `${this.newTestName}-${this.preparedCopiedTest.uid}`;
+            this.copiedTest = _.cloneDeep(this.preparedCopiedTest)
+            $('#allTests').bootstrapTable('append', [
+                { ...this.copiedTest }
+            ])
+            $('#copiedTest').modal('hide');
+            this.newTestName = '';
+            this.performanceAndCopiedTests.push(this.copiedTest);
+            this.selectedTests.push(this.copiedTest);
+            this.preparedCopiedTest = null;
+            this.applyClickedCopy = false;
         },
         createSuit() {
             const tests = $('#allTests').bootstrapTable('getData');
@@ -417,10 +482,37 @@ const SuitModal = {
                 type: '',
                 tests: [],
             }
-            this.$emit('clear-current-suit')
+            this.$emit('clear-current-suit');
         }
     },
     template: `
+        <div class="modal" id="copiedTest" 
+            style="z-index: 1070 !important; background: rgba(117, 127, 153, 0.2)"  tabindex="-1" role="dialog" data-keyboard="false" data-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content p-28">
+                    <p class="font-bold font-h3 mb-4 text-capitalize">Copy test</p>
+                    <div class="custom-input need-validation mb-4 w-100"
+                        :class="{'invalid-input': isNameYetExist(newTestName)}"
+                        :data-valid="isNameYetExist(newTestName)">
+                        <label for="testName" class="font-semibold mb-1">Name</label>
+                        <input
+                            id="testName"
+                            type="text"
+                            v-model="newTestName"
+                            placeholder="New name">
+                        <span class="input_error-msg">Test's name is exist or less than 3 letters</span>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary mr-2" data-toggle="modal" data-target="#copiedTest">Cencel</button>
+                        <button
+                            class="btn btn-basic mr-2 d-flex align-items-center"
+                            @click="submitAddCopiedTest"
+                        >Add</button>
+                    </div>  
+                </div>
+            </div>
+        </div>
+        
         <div class="modal fixed-left shadow-sm" tabindex="-1" role="dialog" id="suiteModal" data-keyboard="false" data-backdrop="static">
             <div class="modal-dialog modal-dialog-aside" role="document">
                 <div class="modal-content pb-0">
@@ -513,16 +605,17 @@ const SuitModal = {
                             </div>
                             <div class="w-100">
                                 <p class="font-h5 text-uppercase font-bold mb-4">suite configuration</p>
-                                <p class="font-h5 font-semibold mb-1">Tests</p>
+                                <p class="font-h5 font-semibold mb-1">Existed Tests</p>
                                 <div class="d-flex mb-4">
                                     <SuitSearch
-                                        v-if="allTest.length > 0"
+                                        v-if="performanceAndCopiedTests.length > 0"
                                         @select-items="selectTests"
                                         :is-all-checked="false"
                                         :key="needUpdateSearch"
                                         class="mr-2"
-                                        :items-list="allTest"
-                                        :init-selected-item="editableSuit.tests">
+                                        :copied-test="copiedTest"
+                                        :items-list="performanceAndCopiedTests"
+                                        :init-selected-item="selectedTests">
                                     </SuitSearch>
                                     <button type="button" class="btn btn-lg btn-secondary" @click="addTests">
                                         Add tests

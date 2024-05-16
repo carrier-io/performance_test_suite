@@ -82,7 +82,8 @@ var SuiteTable = {
                 case 'Observer':
                     return '<img src="/design-system/static/assets/ico/selenium.png" width="20">'
                 default:
-                    return row.runner
+                   // return row.runner
+                    return ""
             }
         }
     },

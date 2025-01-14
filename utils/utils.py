@@ -135,8 +135,13 @@ def update_backend_test_data(test_data, test_parameters, job_type):
         param_default = param["default"]
         if job_type == "perfmeter":
             replacement = f"-J{param_name}={param_default}"
-            cmd_value = cmd_value.replace(f"-J{param_name}={cmd_value.split(f'-J{param_name}=')[1].split(' ')[0]}",
-                                      replacement)
+            try:
+                cmd_value = cmd_value.replace(f"-J{param_name}={cmd_value.split(f'-J{param_name}=')[1].split(' ')[0]}",
+                                        replacement)
+            except Exception as e:
+                log.info("Exception !!!!!!!")
+                log.info(e)
+
             # Check if the parameter is not present in cmd_value, then add it
             if f"-J{param_name}=" not in cmd_value:
                 cmd_value += f" {replacement}"

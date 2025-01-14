@@ -111,7 +111,7 @@ class API(Resource):
             dt = datetime.fromisoformat(label[:-1])
         except ValueError:
             # Handle non-ISO format
-            dt = datetime.strptime(label, "%Y-%m-%d %H:%M:%S")
+            dt = datetime.strptime(label.replace("T", " "), "%Y-%m-%d %H:%M:%S")
         return dt
 
     def get_ui_charts_data(self, project_id, report_id):
